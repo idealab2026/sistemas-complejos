@@ -95,7 +95,7 @@ fieldset{border:0;padding:0;margin:0}.field{display:grid;gap:6px;margin:12px 0;f
 @media(max-width:380px){.domain-stage,.orb-field,.state-grid{grid-template-columns:1fr}.orbital{display:none}}
 @media(prefers-reduced-motion:reduce){.orb-sphere,.orb-sphere i{animation:none!important}.orb-node{transition:none}}
 
-/* ORIGINAL RESEARCH NEURAL COMPONENT; isolated from private data */
+/* Research network component, synthetic demonstration */
 .neural-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:8px;padding:0 28px 24px}
 .neural-stage{position:relative;height:440px;min-width:0;isolation:isolate}
 .neural-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -140,7 +140,7 @@ fieldset{border:0;padding:0;margin:0}.field{display:grid;gap:6px;margin:12px 0;f
 @media(max-width:440px){.neural-top{padding:20px 14px 0;align-items:flex-start}.neural-top .eyebrow{font-size:8px;letter-spacing:1px}.neural-top h3{font-size:19px}.neural-mode{max-width:70px;text-align:center;white-space:normal;line-height:1.5}.neural-layout{padding:0 12px 18px}.neural-stage{height:370px}.neural-orb{width:76px}.neural-orb[data-track="V1"],.neural-orb[data-track="V2"]{top:30px}.neural-orb[data-track="V3"],.neural-orb[data-track="V4"]{bottom:85px}.neural-orb strong{font-size:9px}.orb-sphere{width:44px;height:44px}.orb-sphere:before{inset:-5px}.orb-sphere:after{inset:-9px}.neural-signature span{font-size:10px;letter-spacing:3px}.neural-signature small{font-size:7px;letter-spacing:1px}.track-deck{gap:10px}.track-deck .track-card{padding:14px}.track-deck .track-card strong{font-size:13px}.track-deck .track-card p{min-height:48px}.track-deck .track-foot{flex-wrap:wrap;gap:5px}}
 @media(prefers-reduced-motion:reduce){.neural-stage .orb-sphere:before,.neural-stage .orb-sphere:after,.neural-stage .orb-sphere span{animation:none!important}}
 
-/* ORIGINAL YEAR-STRIP STYLES */
+/* Time-horizon selector styles */
 .future-year-strip{display:flex;align-items:stretch;gap:5px;max-width:100%;overflow-x:auto;padding:12px 1px 9px;scrollbar-color:#537387 #102130}
 .future-year-static,.future-year-select{flex:1 0 98px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:98px;text-align:center;padding:9px 7px;border:1px solid #35556b;border-radius:8px;background:#112939;color:#e2f1fd}
 .future-year-static{background:#1a212b;color:#dde6ef}
