@@ -25,7 +25,11 @@ jobs:
           node-version: "22"
       - name: Verify institutional commit identity
         run: |
-          git log --all --format='%an|%ae|%cn|%ce' | while IFS='|' read -r author email committer commit_email; do
+          git log --all --format='%H|%an|%ae|%cn|%ce' | while IFS='|' read -r sha author email committer commit_email; do
+            # GitHub synthesizes a merge commit for PR checks; audit every real commit, not that generated commit.
+            if [ "$GITHUB_EVENT_NAME" = "pull_request" ] && [ "$sha" = "$GITHUB_SHA" ]; then
+              continue
+            fi
             test "$author" = "Idea Lab"
             test "$committer" = "Idea Lab"
             case "$email" in *+idealab2026@users.noreply.github.com) ;; *) exit 1 ;; esac
