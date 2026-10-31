@@ -148,7 +148,7 @@ fieldset{border:0;padding:0;margin:0}.field{display:grid;gap:6px;margin:12px 0;f
 .future-year-static small,.future-year-select small{font-size:9px;line-height:1.2;color:#afc5d9}
 .future-year-select.active{background:#214258;border-color:#b9e0ff}
 
-/* Same four-state SVG semantics and classes as the original laboratory. */
+/* Four-state SVG visualization and interactive research panels. */
 .future-graph-scroll{width:100%;overflow-x:auto;overflow-y:hidden;touch-action:pan-x pan-y;scrollbar-color:#426787 #0a1929;overscroll-behavior-x:contain;background:#0a1725;border:1px solid #2f4b60;border-radius:12px;margin:14px 0 0}
 .future-graph{display:block;max-width:none;min-height:420px}
 .future-year{font:600 12px ui-monospace,monospace;fill:#d9edfc}.future-year-note{font:9px ui-monospace,monospace;fill:#91b1c7}.future-node-label{font:10px ui-monospace,monospace;fill:#d5e9f7}
@@ -156,11 +156,11 @@ fieldset{border:0;padding:0;margin:0}.field{display:grid;gap:6px;margin:12px 0;f
 .future-pulse{pointer-events:none;animation:probability-flow 4s linear infinite}.future-core-glow{animation:future-glow 5s ease-in-out infinite}.future-year-current{fill:#9bd1ff20;stroke:#a2d8fa80;stroke-width:1}
 @keyframes probability-flow{to{stroke-dashoffset:-88}}@keyframes future-glow{50%{opacity:.48}}
 .future-selection-note{padding:10px 14px;background:#112b3e;border:1px solid #385774;border-radius:8px;font-size:.8rem;color:#d1e7f5;margin:10px 0}
-.original-state-legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}.original-state-legend span{border:1px solid #39546d;border-left:4px solid #69c5f6;border-radius:7px;background:#122738;padding:10px 13px;font-size:.77rem}.original-state-legend span:nth-child(2){border-left-color:#ff9b45}.original-state-legend span:nth-child(3){border-left-color:#84d9bd}.original-state-legend span:nth-child(4){border-left-color:#bdabff}
-.original-markov-panel p{font-size:.8rem;text-align:justify}
-.original-neural-panel .neural-stage{width:100%;height:450px}
-.original-neural-panel .neural-canvas{min-height:360px}
-.original-neural-panel .neural-orb strong{max-width:160px;overflow-wrap:anywhere}
-.original-neural-panel .neural-orb{width:145px}
-@media(max-width:720px){.original-state-legend{grid-template-columns:repeat(2,minmax(0,1fr))}.original-neural-panel .neural-orb{width:105px}.original-markov-panel .future-year-select{flex:1 0 82px}}
-@media(prefers-reduced-motion:reduce){.future-pulse,.future-core-glow{animation:none}.original-neural-panel .neural-stage .orb-sphere:before,.original-neural-panel .neural-stage .orb-sphere:after{animation:none}}
+.science-state-legend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}.science-state-legend span{border:1px solid #39546d;border-left:4px solid #69c5f6;border-radius:7px;background:#122738;padding:10px 13px;font-size:.77rem}.science-state-legend span:nth-child(2){border-left-color:#ff9b45}.science-state-legend span:nth-child(3){border-left-color:#84d9bd}.science-state-legend span:nth-child(4){border-left-color:#bdabff}
+.science-markov-panel p{font-size:.8rem;text-align:justify}
+.science-neural-panel .neural-stage{width:100%;height:450px}
+.science-neural-panel .neural-canvas{min-height:360px}
+.science-neural-panel .neural-orb strong{max-width:160px;overflow-wrap:anywhere}
+.science-neural-panel .neural-orb{width:145px}
+@media(max-width:720px){.science-state-legend{grid-template-columns:repeat(2,minmax(0,1fr))}.science-neural-panel .neural-orb{width:105px}.science-markov-panel .future-year-select{flex:1 0 82px}}
+@media(prefers-reduced-motion:reduce){.future-pulse,.future-core-glow{animation:none}.science-neural-panel .neural-stage .orb-sphere:before,.science-neural-panel .neural-stage .orb-sphere:after{animation:none}}
