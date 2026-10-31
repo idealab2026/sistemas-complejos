@@ -32,6 +32,6 @@ GitHub Actions ejecuta las pruebas, comprueba los autores, audita el árbol púb
 
 Toda observación requiere licencia de redistribución, fuente primaria, fecha de publicación, edición temporal recuperable y protocolo de evaluación. Los pronósticos necesitan fecha de emisión verificable anterior al desenlace y comparación con un baseline. Las evaluaciones retrospectivas no se presentarán como pruebas prospectivas.
 
-El sistema es independiente y no incluye credenciales, integración con servicios privados ni importación del historial de desarrollo de terceros. La ausencia de referencias explícitas no garantiza imposibilidad de atribución mediante comparación con información pública anterior.
+El sitio es una demostración pública autocontenida: no incorpora credenciales, endpoints de acceso privado ni datasets experimentales. Se auditan sus activos y dependencias antes de cada publicación.
 
 © IDEA LAB. Derechos reservados salvo indicación expresa.

@@ -1,7 +1,7 @@
 import {verify,score,calibration} from "./metrics.mjs";
 import {verifyResearch,parseForecastCSV,evaluateLocalForecast,CSV_TEMPLATE} from "./research.mjs";
 import {domainGraph} from "./visuals.mjs";
-import {realNeuralPanel,enableOriginalNeural,originalMarkovPanel,syntheticFourStateModel} from "./original-lab.mjs";
+import {scientificNeuralPanel,enableScientificNeural,scientificMarkovPanel,syntheticFourStateModel} from "./lab-renderers.mjs";
 
 const $=id=>document.getElementById(id);
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -33,11 +33,11 @@ const programCard=p=>box('<div class="item-row wrap"><h3>'+safe(p.name)+'</h3>'+
 function renderBrief(){
  const d=state.data;
  const ready=d.milestones.filter(x=>x.state==="verificado").length;
- return section("INICIO · ESTADO PÚBLICO","Próximos pasos y resultados","Preparar, publicar y demostrar utilidad son hitos distintos. Esta sede no reutiliza los datos privados de ningún otro laboratorio.")+
- realNeuralPanel(d.programs,state.program)+
+ return section("INICIO · ESTADO PÚBLICO","Próximos pasos y resultados","Preparar, publicar y demostrar utilidad son hitos distintos. Las cifras de esta web son ilustrativas y no constituyen evidencia predictiva.")+
+ scientificNeuralPanel(d.programs,state.program)+
  box('<div class="item-row wrap"><div><h3>Registro público experimental</h3><p>Versión funcional con muestras sintéticas y revisión de procedimientos.</p></div>'+tag("Sin predicciones reales","alert")+'</div>'+
  '<div class="section-grid three"><div><div class="card-number">'+d.programs.length+'</div><div class="tiny">Líneas de estudio</div></div><div><div class="card-number">'+ready+'/'+d.milestones.length+'</div><div class="tiny">Pasos técnicos verificados</div></div><div><div class="card-number">0</div><div class="tiny">Pronósticos prospectivos acreditados</div></div></div>','highlight')+
- section("LECTURA RÁPIDA","Qué se puede explorar","Cada módulo funciona con un contrato independiente. No se ha transferido ningún motor privado ni sus historiales.")+
+ section("LECTURA RÁPIDA","Qué se puede explorar","Cada módulo tiene un propósito concreto y muestra los supuestos, las fuentes y las limitaciones de los ejemplos.")+
  cards([
  ["Árbol de futuros","Escenarios alternativos y supuestos explícitos. No son pronósticos.", "navigate","futures"],
  ["Evidencia y modelos","Evaluación probabilística sintética comparada con un baseline.", "navigate","science"],
@@ -49,7 +49,7 @@ function renderFutures(){
  const d=state.data;
  const chosen=d.branches.find(x=>x.id===state.scenario)||d.branches[0];
  return section("PREDICCIONES · EXPLORADOR","Árbol de posibilidades","Exploración de mecanismos hipotéticos. Los porcentajes siguientes son pesos fijados para la demostración; no están estimados a partir de resultados reales.")+
- originalMarkovPanel({horizon:state.markovHorizon,selection:state.markovSelection})+
+ scientificMarkovPanel({horizon:state.markovHorizon,selection:state.markovSelection})+
   '<div class="two-col">'+box('<div class="tiny">TRAYECTORIA ELEGIDA</div><h3>'+safe(chosen.name)+'</h3><div class="tree">'+d.branches.map(b=>'<div class="scenario '+(chosen.id===b.id?"active":"")+'"><div class="tiny">ESTADO POSIBLE</div><strong>'+safe(b.name)+'</strong>'+percentageBar(b.weight)+'</div>').join("")+'</div><p>La partición del universo es hipotética; cualquier cambio de supuestos exige documentar una nueva versión.</p>')+
  box('<h3>Lectura explicable</h3><p>'+safe(chosen.mechanism)+'</p><h4>Observación a vigilar</h4><p>'+safe(chosen.watch)+'</p><div class="notice">No hay resultados registrados ni probabilidades de países o eventos reales.</div>')+'</div>'+
   section("PROBABILIDADES","Modelo y trayectoria","La demostración permite alternar entre estudios y visualizar sus probabilidades sobre etiquetas inventadas.")+
@@ -68,8 +68,8 @@ function renderOverview(){
  const d=state.data;
  const selected=d.programs.find(x=>x.id===state.program)||d.programs[0];
  return section("INVESTIGACIÓN · ESTRUCTURA","Mapa del proyecto","Líneas independientes conectadas mediante preguntas y controles de validación. La investigación aquí descrita es un programa, no una lista de predicciones confirmadas.")+
- realNeuralPanel(d.programs,state.program)+
- box('<div class="tiny">LÍNEA SELECCIONADA</div><h3>'+safe(selected.name)+'</h3><p>'+safe(selected.summary)+'</p><h4>Protocolo de salida</h4><p>'+safe(selected.protocol)+'</p><div class="notice info">Estado: '+safe(selected.state)+'. Los modelos y resultados originales requieren evaluación independiente antes de su incorporación.</div>')+
+ scientificNeuralPanel(d.programs,state.program)+
+ box('<div class="tiny">LÍNEA SELECCIONADA</div><h3>'+safe(selected.name)+'</h3><p>'+safe(selected.summary)+'</p><h4>Protocolo de salida</h4><p>'+safe(selected.protocol)+'</p><div class="notice info">Estado: '+safe(selected.state)+'. Cualquier resultado empírico deberá superar una evaluación independiente antes de publicarse.</div>')+
  section("SINERGIAS","Arquitectura del laboratorio","Los estudios estructurales, los modelos de predicción, las simulaciones y la auditoría científica se desarrollan con controles comunes.")+
  methods();
 }
@@ -107,7 +107,7 @@ function renderOperations(){
  return section("INVESTIGACIÓN · TRAZABILIDAD","Registro público","Inventario de experimentos de muestra y de sus limitaciones. No se transfieren registros de trabajo ni referencias a bases de datos ajenas.")+
  '<div class="table-wrap"><table><thead><tr><th>ID de demostración</th><th>Objeto de estudio</th><th>Horizonte</th><th>Procedimiento</th><th>Estado</th></tr></thead><tbody>'+d.studies.map(s=>'<tr><td>'+safe(s.id)+'</td><td>'+safe(s.title)+'</td><td>'+safe(s.horizon)+'</td><td>'+safe(s.method)+'</td><td>'+tag("Ficticio")+'</td></tr>').join("")+'</tbody></table></div>'+
  box('<h3>Control de origen</h3><p>El registro público requiere para cada futuro experimento: identificador nuevo, instante de emisión, conjunto de datos y edición, algoritmo versionado, horizonte y resolución externa independiente.</p>'+
- msg("El registro privado de investigación, sus fuentes canónicas, sus notas y sus credenciales no forman parte de este sitio."),"soft")+
+ msg("Este sitio ofrece exclusivamente contenidos públicos y ejemplos de carácter ilustrativo."),"soft")+
  section("CÓMO PUBLICAREMOS","Contrato para nuevas evaluaciones","No se aceptan entradas sin información suficiente para comprobar el orden temporal entre pronóstico, datos y resolución.")+methods();
 }
 function renderRoadmap(){
@@ -177,7 +177,7 @@ function render(){
   science:renderScience,registry:renderResearchRegistry,operations:renderOperations,roadmap:renderRoadmap,ideas:renderIdeas,video:renderVideo};
  $("app").innerHTML=views[state.view]();
  updateChart();
- disposeScientificNeural=enableOriginalNeural($("app"),state.data.programs,state.program);
+ disposeScientificNeural=enableScientificNeural($("app"),state.data.programs,state.program);
 }
 function navigate(view){
  if(!viewIds.has(view))return;

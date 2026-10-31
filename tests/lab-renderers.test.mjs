@@ -3,20 +3,20 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {buildScientificNetwork,createResearchFrameLoop} from "../src/neural.mjs";
 import {renderVerifiedGeometry} from "../src/markov-svg.mjs";
-import {realNeuralPanel,syntheticFourStateModel,originalMarkovPanel,TRANSITIONS} from "../src/original-lab.mjs";
+import {scientificNeuralPanel,syntheticFourStateModel,scientificMarkovPanel,TRANSITIONS} from "../src/lab-renderers.mjs";
 const demo=JSON.parse(readFileSync(new URL("../data/demo.json",import.meta.url),"utf8"));
-test("Original neuronal geometry has two lobes and all four conceptual tracks",()=>{
+test("Research network geometry has two lobes and all four conceptual tracks",()=>{
  const g=buildScientificNetwork(16);
  assert.equal(g.nodes.length,32);
  assert.ok(g.edges.length>32);
  assert.deepEqual(new Set(g.nodes.map(x=>x.track)),new Set([0,1,2,3]));
- const html=realNeuralPanel(demo.programs,"P1");
+ const html=scientificNeuralPanel(demo.programs,"P1");
  assert.equal((html.match(/class="neural-orb"/g)||[]).length,4);
- assert.match(html,/data-original-neural/);
+ assert.match(html,/data-science-neural/);
  assert.match(html,/data-motion-toggle/);
  assert.doesNotMatch(html,/mamg97|Segundo Cerebro|cloudflare/i);
 });
-test("Original animation loop has bounded lifecycle and respects dispose",()=>{
+test("Scientific animation loop has bounded lifecycle and respects dispose",()=>{
  let current=null,canceled=0,draws=0;
  const loop=createResearchFrameLoop({request:cb=>(current=cb,1),cancel:()=>{canceled++},draw:()=>{draws++}});
  loop.setEnabled(true);
@@ -42,7 +42,7 @@ test("Synthetic Markov transitions are stochastic and obey 00/01/10/11 paths",()
  assert.equal(d.observedStates.length,0);
  assert.deepEqual(d.country,{name:"Ejemplo sintético"});
 });
-test("Original SVG renderer displays the complete eight-column time tree and scientific interactions",()=>{
+test("Scientific SVG renderer displays the complete eight-column time tree and scientific interactions",()=>{
  const d=syntheticFourStateModel();
  const svg=renderVerifiedGeometry(d,4,null,false,true);
  assert.match(svg,/class="future-graph"/);
@@ -53,17 +53,17 @@ test("Original SVG renderer displays the complete eight-column time tree and sci
  assert.doesNotMatch(svg,/future-observed-halo|REAL · FINAL/);
  const selected=renderVerifiedGeometry(d,4,{kind:"node",level:3,state:1},false,true);
  assert.match(selected,/class="future-node selected"/);
- const html=originalMarkovPanel({horizon:3});
+ const html=scientificMarkovPanel({horizon:3});
  assert.equal((html.match(/data-action="markov-year"/g)||[]).length,8);
  assert.match(html,/NINGÚN PAÍS REAL/);
  assert.throws(()=>syntheticFourStateModel(22));
- assert.throws(()=>originalMarkovPanel({horizon:7}));
+ assert.throws(()=>scientificMarkovPanel({horizon:7}));
 });
 test("Public release uses the source-based canvas, not the substitute orbit/tree diagrams",()=>{
  const site=readFileSync(new URL("../src/site.mjs",import.meta.url),"utf8");
- assert.match(site,/realNeuralPanel\(d\.programs,state\.program\)/);
- assert.match(site,/enableOriginalNeural/);
- assert.match(site,/originalMarkovPanel/);
+ assert.match(site,/scientificNeuralPanel\(d\.programs,state\.program\)/);
+ assert.match(site,/enableScientificNeural/);
+ assert.match(site,/scientificMarkovPanel/);
  assert.doesNotMatch(site,/scenarioBranches\(d\.branches/);
  assert.doesNotMatch(site,/stateTransitionDiagram\(state\.flowState/);
  const index=readFileSync(new URL("../index.html",import.meta.url),"utf8");
