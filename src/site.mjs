@@ -1,5 +1,6 @@
 import {verify,score,calibration} from "./metrics.mjs";
 import {verifyResearch,parseForecastCSV,evaluateLocalForecast,CSV_TEMPLATE} from "./research.mjs";
+import {researchOrbs,scenarioBranches,stateTransitionDiagram,domainGraph} from "./visuals.mjs";
 
 const $=id=>document.getElementById(id);
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -13,7 +14,7 @@ const groupViews={
 };
 const viewIds=new Set(Object.values(groupViews).flat().map(x=>x[0]));
 const viewToGroup=Object.fromEntries(Object.entries(groupViews).flatMap(([k,items])=>items.map(([id])=>[id,k])));
-const state={data:null,research:null,registryFilter:"todos",registryOutput:null,view:viewIds.has(new URLSearchParams(location.search).get("view"))?new URLSearchParams(location.search).get("view"):"brief",scenario:null,program:null,study:null,filter:"todos",ideas:[],videoText:"",busy:false};
+const state={data:null,research:null,registryFilter:"todos",registryOutput:null,view:viewIds.has(new URLSearchParams(location.search).get("view"))?new URLSearchParams(location.search).get("view"):"brief",scenario:null,program:null,study:null,filter:"todos",ideas:[],flowState:"00",videoText:"",busy:false};
 const section=(eyebrow,title,description)=>'<header class="section-head"><div class="eyebrow">'+safe(eyebrow)+'</div><h2>'+safe(title)+'</h2><p>'+safe(description)+'</p></header>';
 const box=(contents,extra="")=>'<article class="panel '+extra+'">'+contents+'</article>';
 const tag=(t,cls="")=>'<span class="tag '+cls+'">'+safe(t)+'</span>';
@@ -32,6 +33,7 @@ function renderBrief(){
  const d=state.data;
  const ready=d.milestones.filter(x=>x.state==="verificado").length;
  return section("INICIO · ESTADO PÚBLICO","Próximos pasos y resultados","Preparar, publicar y demostrar utilidad son hitos distintos. Esta sede no reutiliza los datos privados de ningún otro laboratorio.")+
+ researchOrbs(d.programs,state.program)+
  box('<div class="item-row wrap"><div><h3>Registro público experimental</h3><p>Versión funcional con muestras sintéticas y revisión de procedimientos.</p></div>'+tag("Sin predicciones reales","alert")+'</div>'+
  '<div class="section-grid three"><div><div class="card-number">'+d.programs.length+'</div><div class="tiny">Líneas de estudio</div></div><div><div class="card-number">'+ready+'/'+d.milestones.length+'</div><div class="tiny">Pasos técnicos verificados</div></div><div><div class="card-number">0</div><div class="tiny">Pronósticos prospectivos acreditados</div></div></div>','highlight')+
  section("LECTURA RÁPIDA","Qué se puede explorar","Cada módulo funciona con un contrato independiente. No se ha transferido ningún motor privado ni sus historiales.")+
@@ -46,10 +48,11 @@ function renderFutures(){
  const d=state.data;
  const chosen=d.branches.find(x=>x.id===state.scenario)||d.branches[0];
  return section("PREDICCIONES · EXPLORADOR","Árbol de posibilidades","Exploración de mecanismos hipotéticos. Los porcentajes siguientes son pesos fijados para la demostración; no están estimados a partir de resultados reales.")+
- '<div class="section-grid three">'+d.branches.map(b=>box('<div class="item-row wrap"><h3>'+safe(b.name)+'</h3>'+tag(formatPct(b.weight))+'</div>'+percentageBar(b.weight)+'<p>'+safe(b.mechanism)+'</p>'+button("Explorar trayectoria","scenario",b.id,b.id===chosen.id?"ghost active":"ghost"),b.id===chosen.id?"highlight":"")).join("")+'</div>'+
- '<div class="two-col">'+box('<div class="tiny">TRAYECTORIA ELEGIDA</div><h3>'+safe(chosen.name)+'</h3><div class="tree">'+d.branches.map(b=>'<div class="scenario '+(chosen.id===b.id?"active":"")+'"><div class="tiny">ESTADO POSIBLE</div><strong>'+safe(b.name)+'</strong>'+percentageBar(b.weight)+'</div>').join("")+'</div><p>La partición del universo es hipotética; cualquier cambio de supuestos exige documentar una nueva versión.</p>')+
+ scenarioBranches(d.branches,chosen.id)+
+  '<div class="two-col">'+box('<div class="tiny">TRAYECTORIA ELEGIDA</div><h3>'+safe(chosen.name)+'</h3><div class="tree">'+d.branches.map(b=>'<div class="scenario '+(chosen.id===b.id?"active":"")+'"><div class="tiny">ESTADO POSIBLE</div><strong>'+safe(b.name)+'</strong>'+percentageBar(b.weight)+'</div>').join("")+'</div><p>La partición del universo es hipotética; cualquier cambio de supuestos exige documentar una nueva versión.</p>')+
  box('<h3>Lectura explicable</h3><p>'+safe(chosen.mechanism)+'</p><h4>Observación a vigilar</h4><p>'+safe(chosen.watch)+'</p><div class="notice">No hay resultados registrados ni probabilidades de países o eventos reales.</div>')+'</div>'+
- section("PROBABILIDADES","Modelo y trayectoria","La demostración permite alternar entre estudios y visualizar sus probabilidades sobre etiquetas inventadas.")+
+ stateTransitionDiagram(state.flowState)+
+  section("PROBABILIDADES","Modelo y trayectoria","La demostración permite alternar entre estudios y visualizar sus probabilidades sobre etiquetas inventadas.")+
  renderStudySelector()+box('<svg id="study-chart" class="chart-svg frame-chart" viewBox="0 0 760 285" role="img" aria-label="Probabilidades ficticias y etiquetas simuladas"></svg><div class="tiny">Azul: probabilidad del modelo. Puntos verdes: resultados sintéticos. Línea discontinua: referencia.</div>')+syntheticWarning();
 }
 function renderShadow(){
@@ -65,7 +68,7 @@ function renderOverview(){
  const d=state.data;
  const selected=d.programs.find(x=>x.id===state.program)||d.programs[0];
  return section("INVESTIGACIÓN · ESTRUCTURA","Mapa del proyecto","Líneas independientes conectadas mediante preguntas y controles de validación. La investigación aquí descrita es un programa, no una lista de predicciones confirmadas.")+
- '<div class="section-grid">'+d.programs.map(programCard).join("")+'</div>'+
+ researchOrbs(d.programs,state.program)+
  box('<div class="tiny">LÍNEA SELECCIONADA</div><h3>'+safe(selected.name)+'</h3><p>'+safe(selected.summary)+'</p><h4>Protocolo de salida</h4><p>'+safe(selected.protocol)+'</p><div class="notice info">Estado: '+safe(selected.state)+'. Los modelos y resultados originales requieren evaluación independiente antes de su incorporación.</div>')+
  section("SINERGIAS","Arquitectura del laboratorio","Los estudios estructurales, los modelos de predicción, las simulaciones y la auditoría científica se desarrollan con controles comunes.")+
  methods();
@@ -90,7 +93,8 @@ function renderResearchRegistry(){
  const r=state.registryOutput;
  const report=r?box('<div class="section-grid three"><div><span class="tiny">OBSERVACIONES</span><h3>'+r.n+'</h3></div><div><span class="tiny">BRIER MODELO</span><h3>'+format(r.model_brier)+'</h3></div><div><span class="tiny">BRIER BASELINE</span><h3>'+format(r.baseline_brier)+'</h3></div></div><p>Mejora aritmética relativa: '+formatPct(r.relative_skill)+'. '+safe(r.notice)+'</p>'):'<p class="tiny">Sin observaciones evaluadas en esta sesión.</p>';
  return section("INVESTIGACIÓN · FUENTES","Siete líneas científicas","Preguntas contrastables y fuentes primarias. No son siete modelos validados ni siete predicciones emitidas.")+
- '<div class="button-group">'+domains.map(x=>button(x,"registry-filter",x,state.registryFilter===x?"ghost active":"ghost")).join("")+'</div>'+
+ domainGraph(d.programs,state.registryFilter)+
+  '<div class="button-group">'+domains.map(x=>button(x,"registry-filter",x,state.registryFilter===x?"ghost active":"ghost")).join("")+'</div>'+
  '<div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Línea</th><th>Objetivo observable</th><th>Situación</th><th>Fuente primaria</th></tr></thead><tbody>'+
  filtered.map(p=>'<tr><td><strong>'+safe(p.title)+'</strong><div class="tiny">'+safe(p.id)+' · '+safe(p.domain)+'</div><p>'+safe(p.question)+'</p></td><td>'+safe(p.outcome)+'<div class="tiny">Referencia: '+safe(p.baseline)+'</div></td><td>'+tag(p.stage)+'<div class="tiny" title="'+safe(p.next_gate)+'">'+safe(p.next_gate)+'</div></td><td><a href="'+safe(p.source.url)+'" target="_blank" rel="noopener noreferrer">'+safe(p.source.name)+'</a><div class="tiny">'+safe(p.public_evidence)+'</div></td></tr>').join("")+'</tbody></table></div>'+
  section("EVALUACIÓN · LOCAL","Evaluador probabilístico","Calcula Brier respecto a una referencia a partir de un archivo CSV en tu navegador. Las fechas escritas no acreditan por sí mismas su veracidad.")+
@@ -231,7 +235,8 @@ $("app").addEventListener("click",async event=>{
  switch(action){
  case "navigate":navigate(value);break;
  case "scenario":state.scenario=value;render();break;
- case "program":state.program=value;render();break;
+ case "program":state.program=value;navigate("overview");break;
+ case "state-flow":state.flowState=value;render();break;
  case "filter":state.filter=value;render();break;
   case "registry-filter":state.registryFilter=value;render();break;
   case "download-research-csv": {
