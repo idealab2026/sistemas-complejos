@@ -31,8 +31,13 @@ jobs:
               continue
             fi
             test "$author" = "Idea Lab"
-            test "$committer" = "Idea Lab"
             case "$email" in *+idealab2026@users.noreply.github.com) ;; *) exit 1 ;; esac
+            # GitHub creates the committer identity for website squash merges.
+            # Never waive or broaden the strict institutional AUTHOR check.
+            if [ "$committer" = "GitHub" ] && [ "$commit_email" = "noreply@github.com" ]; then
+              continue
+            fi
+            test "$committer" = "Idea Lab"
             case "$commit_email" in *+idealab2026@users.noreply.github.com) ;; *) exit 1 ;; esac
           done
       - name: Check publication boundary
