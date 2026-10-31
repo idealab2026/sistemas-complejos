@@ -1,4 +1,5 @@
 import {verify,score,calibration} from "./metrics.mjs";
+import {verifyResearch,parseForecastCSV,evaluateLocalForecast,CSV_TEMPLATE} from "./research.mjs";
 
 const $=id=>document.getElementById(id);
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -7,12 +8,12 @@ const formatPct=n=>typeof n==="number"&&Number.isFinite(n)?format(n*100)+" %":"�
 const groupViews={
  brief:[["brief","Inicio"]],
  predictions:[["futures","Explorador"],["shadow2027","Riesgos 2027"]],
- research:[["overview","Mapa del proyecto"],["science","Evidencia"],["operations","Registro"],["roadmap","Hitos"]],
+ research:[["overview","Mapa del proyecto"],["registry","Líneas y fuentes"],["science","Evidencia"],["operations","Registro"],["roadmap","Hitos"]],
  create:[["ideas","Ideas y sinergias"],["video","Estudio audiovisual"]]
 };
 const viewIds=new Set(Object.values(groupViews).flat().map(x=>x[0]));
 const viewToGroup=Object.fromEntries(Object.entries(groupViews).flatMap(([k,items])=>items.map(([id])=>[id,k])));
-const state={data:null,view:viewIds.has(new URLSearchParams(location.search).get("view"))?new URLSearchParams(location.search).get("view"):"brief",scenario:null,program:null,study:null,filter:"todos",ideas:[],videoText:"",busy:false};
+const state={data:null,research:null,registryFilter:"todos",registryOutput:null,view:viewIds.has(new URLSearchParams(location.search).get("view"))?new URLSearchParams(location.search).get("view"):"brief",scenario:null,program:null,study:null,filter:"todos",ideas:[],videoText:"",busy:false};
 const section=(eyebrow,title,description)=>'<header class="section-head"><div class="eyebrow">'+safe(eyebrow)+'</div><h2>'+safe(title)+'</h2><p>'+safe(description)+'</p></header>';
 const box=(contents,extra="")=>'<article class="panel '+extra+'">'+contents+'</article>';
 const tag=(t,cls="")=>'<span class="tag '+cls+'">'+safe(t)+'</span>';
@@ -81,6 +82,22 @@ function renderScience(){
  box('<div class="tiny">CONTRASTE</div><div id="score-info"></div><p>La métrica de Brier mide el error cuadrático de probabilidades entre 0 y 1; valores menores indican menor error en este conjunto.</p>')+'</div>'+
  section("REGLAS DE ADMISIÓN","Separar evaluación retrospectiva y prospectiva","Los test revisados y las simulaciones no pueden presentarse como rendimientos reales de un sistema de anticipación.")+methods()+syntheticWarning();
 }
+function renderResearchRegistry(){
+ const d=state.research;
+ if(!d)return section("INVESTIGACIÓN","Líneas y fuentes","El registro independiente no está disponible.")+msg("Sin registro de fuentes verificado; no se muestran resultados de respaldo.","alert");
+ const domains=["todos",...new Set(d.programs.map(p=>p.domain))];
+ const filtered=state.registryFilter==="todos"?d.programs:d.programs.filter(p=>p.domain===state.registryFilter);
+ const r=state.registryOutput;
+ const report=r?box('<div class="section-grid three"><div><span class="tiny">OBSERVACIONES</span><h3>'+r.n+'</h3></div><div><span class="tiny">BRIER MODELO</span><h3>'+format(r.model_brier)+'</h3></div><div><span class="tiny">BRIER BASELINE</span><h3>'+format(r.baseline_brier)+'</h3></div></div><p>Mejora aritmética relativa: '+formatPct(r.relative_skill)+'. '+safe(r.notice)+'</p>'):'<p class="tiny">Sin observaciones evaluadas en esta sesión.</p>';
+ return section("INVESTIGACIÓN · FUENTES","Siete líneas científicas","Preguntas contrastables y fuentes primarias. No son siete modelos validados ni siete predicciones emitidas.")+
+ '<div class="button-group">'+domains.map(x=>button(x,"registry-filter",x,state.registryFilter===x?"ghost active":"ghost")).join("")+'</div>'+
+ '<div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Línea</th><th>Objetivo observable</th><th>Situación</th><th>Fuente primaria</th></tr></thead><tbody>'+
+ filtered.map(p=>'<tr><td><strong>'+safe(p.title)+'</strong><div class="tiny">'+safe(p.id)+' · '+safe(p.domain)+'</div><p>'+safe(p.question)+'</p></td><td>'+safe(p.outcome)+'<div class="tiny">Referencia: '+safe(p.baseline)+'</div></td><td>'+tag(p.stage)+'<div class="tiny" title="'+safe(p.next_gate)+'">'+safe(p.next_gate)+'</div></td><td><a href="'+safe(p.source.url)+'" target="_blank" rel="noopener noreferrer">'+safe(p.source.name)+'</a><div class="tiny">'+safe(p.public_evidence)+'</div></td></tr>').join("")+'</tbody></table></div>'+
+ section("EVALUACIÓN · LOCAL","Evaluador probabilístico","Calcula Brier respecto a una referencia a partir de un archivo CSV en tu navegador. Las fechas escritas no acreditan por sí mismas su veracidad.")+
+ box('<label class="field">CSV (máximo 500 KB y 2.000 filas)<input type="file" id="research-csv" accept=".csv,text/csv"></label><div class="button-group">'+button("Descargar ejemplo CSV","download-research-csv","")+'</div>'+report)+
+ msg("Evaluación aritmética local, sin transferencia del archivo ni certificación externa de fuentes, fechas o desenlaces.");
+}
+
 function renderOperations(){
  const d=state.data;
  return section("INVESTIGACIÓN · TRAZABILIDAD","Registro público","Inventario de experimentos de muestra y de sus limitaciones. No se transfieren registros de trabajo ni referencias a bases de datos ajenas.")+
@@ -151,7 +168,7 @@ function render(){
   b.classList.toggle("active",state.view===id);sub.append(b);
  }
  const views={brief:renderBrief,futures:renderFutures,shadow2027:renderShadow,overview:renderOverview,
-  science:renderScience,operations:renderOperations,roadmap:renderRoadmap,ideas:renderIdeas,video:renderVideo};
+  science:renderScience,registry:renderResearchRegistry,operations:renderOperations,roadmap:renderRoadmap,ideas:renderIdeas,video:renderVideo};
  $("app").innerHTML=views[state.view]();
  updateChart();
 }
@@ -165,8 +182,10 @@ function navigate(view){
 async function load(){
  if(state.busy)return;state.busy=true;$("refresh").disabled=true;$("sync-status").textContent="Validando el registro público…";
  try{
-  const response=await fetch("./data/demo.json",{cache:"no-store"});if(!response.ok)throw new Error("Source unavailable");
-  const data=await response.json();verify(data);
+  const [response,researchResponse]=await Promise.all([fetch("./data/demo.json",{cache:"no-store"}),fetch("./data/research.json",{cache:"no-store"})]);
+   if(!response.ok||!researchResponse.ok)throw new Error("Public sources unavailable");
+   const [data,research]=await Promise.all([response.json(),researchResponse.json()]);
+   verify(data);verifyResearch(research);state.research=research;
   for(const key of ["programs","milestones","ideas"])if(!Array.isArray(data[key]))throw new Error("Incomplete public catalogue");
   state.data=data;state.scenario=state.scenario||data.branches[0].id;state.program=state.program||data.programs[0].id;state.study=state.study||data.studies[0].id;
   $("count-studies").textContent=data.studies.length;$("count-models").textContent=data.programs.length;
@@ -214,6 +233,11 @@ $("app").addEventListener("click",async event=>{
  case "scenario":state.scenario=value;render();break;
  case "program":state.program=value;render();break;
  case "filter":state.filter=value;render();break;
+  case "registry-filter":state.registryFilter=value;render();break;
+  case "download-research-csv": {
+   const url=URL.createObjectURL(new Blob([CSV_TEMPLATE],{type:"text/csv;charset=utf-8"}));
+   const a=document.createElement("a");a.href=url;a.download="probabilities-example.csv";document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);break;
+  }
  case "export-ideas":exportIdeas();break;
  case "make-video":makeVideo();break;
  case "copy-video":
@@ -228,6 +252,19 @@ $("subtabs").addEventListener("click",event=>{
 });
 $("app").addEventListener("change",event=>{
  if(event.target.id==="study-selector"){state.study=event.target.value;render();}
+});
+$("app").addEventListener("change",async event=>{
+ if(event.target.id!=="research-csv")return;
+ try{
+  const file=event.target.files?.[0];if(!file)return;
+  if(file.size>500000)throw Error("Archivo superior al tamaño admitido");
+  state.registryOutput=evaluateLocalForecast(parseForecastCSV(await file.text()));
+  render();
+ }catch(error){
+  state.registryOutput=null;render();
+  const notice=document.createElement("p");notice.className="notice alert";
+  notice.textContent="CSV rechazado: "+error.message;$("app").append(notice);
+ }
 });
 $("app").addEventListener("submit",event=>{
  if(event.target.id!=="idea-form")return;
