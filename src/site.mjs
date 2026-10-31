@@ -1,54 +1,245 @@
 import {verify,score,calibration} from "./metrics.mjs";
-const $=id=>document.getElementById(id),NS="http://www.w3.org/2000/svg";
-function textNode(tag,content,cls){const el=document.createElement(tag);if(content!==undefined)el.textContent=content;if(cls)el.className=cls;return el;}
-function svgNode(tag,attrs={},value){const el=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);if(value!==undefined)el.textContent=value;return el;}
-function studies(data){
- const grid=$("studies-grid");grid.replaceChildren();
- for(const s of data.studies){
-  const box=textNode("article",undefined,"panel"),top=textNode("div",undefined,"panel-top");
-  top.append(textNode("span",s.domain,"label"),textNode("span",s.status,"chip"));box.append(top,textNode("h3",s.title),textNode("p",s.question));
-  box.append(textNode("span","Horizonte: "+s.horizon,"label"));
-  const p=textNode("p");p.append(textNode("strong","Método: "),document.createTextNode(s.method));box.append(p);
-  const caution=textNode("p");caution.append(textNode("strong","Límite: "),document.createTextNode(s.limits));box.append(caution);grid.append(box);
+
+const $=id=>document.getElementById(id);
+const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const format=n=>typeof n==="number"&&Number.isFinite(n)?new Intl.NumberFormat("es-ES",{maximumFractionDigits:3}).format(n):"—";
+const formatPct=n=>typeof n==="number"&&Number.isFinite(n)?format(n*100)+" %":"—";
+const groupViews={
+ brief:[["brief","Inicio"]],
+ predictions:[["futures","Explorador"],["shadow2027","Riesgos 2027"]],
+ research:[["overview","Mapa del proyecto"],["science","Evidencia"],["operations","Registro"],["roadmap","Hitos"]],
+ create:[["ideas","Ideas y sinergias"],["video","Estudio audiovisual"]]
+};
+const viewIds=new Set(Object.values(groupViews).flat().map(x=>x[0]));
+const viewToGroup=Object.fromEntries(Object.entries(groupViews).flatMap(([k,items])=>items.map(([id])=>[id,k])));
+const state={data:null,view:viewIds.has(new URLSearchParams(location.search).get("view"))?new URLSearchParams(location.search).get("view"):"brief",scenario:null,program:null,study:null,filter:"todos",ideas:[],videoText:"",busy:false};
+const section=(eyebrow,title,description)=>'<header class="section-head"><div class="eyebrow">'+safe(eyebrow)+'</div><h2>'+safe(title)+'</h2><p>'+safe(description)+'</p></header>';
+const box=(contents,extra="")=>'<article class="panel '+extra+'">'+contents+'</article>';
+const tag=(t,cls="")=>'<span class="tag '+cls+'">'+safe(t)+'</span>';
+const msg=(text,type="info")=>'<div class="notice '+type+'">'+safe(text)+'</div>';
+const button=(title,action,value,cls="ghost")=>'<button type="button" class="'+cls+'" data-action="'+safe(action)+'" data-value="'+safe(value)+'">'+safe(title)+'</button>';
+const percentageBar=n=>'<div class="barline" aria-label="Peso supuesto: '+safe(Math.round(n*100))+' %"><i style="width:'+Math.round(n*100)+'%"></i></div>';
+const syntheticWarning=()=>msg("DATOS SINTÉTICOS: los ejemplos, probabilidades y desenlaces se han creado para comprobar la interfaz. No proceden de una investigación o predicción real.");
+const methods=()=>'<div class="section-grid three">'+[
+ ["Definir antes de observar","Fijar evento, población, horizonte temporal y regla de evaluación antes de conocer la respuesta."],
+ ["Documentar lo disponible","Verificar la edición de cada dato y su fecha de publicación, evitando revisiones posteriores."],
+ ["Comparar y reconocer límites","Presentar baseline, cobertura, incertidumbre, errores y resultados no favorables."]
+].map(([t,p])=>box('<h3>'+safe(t)+'</h3><p>'+safe(p)+'</p>')).join("")+'</div>';
+const cards=items=>'<div class="section-grid">'+items.map(([title,body,action,value])=>box('<h3>'+safe(title)+'</h3><p>'+safe(body)+'</p>'+button("Explorar",action,value))).join("")+'</div>';
+const programCard=p=>box('<div class="item-row wrap"><h3>'+safe(p.name)+'</h3>'+tag(p.state)+'</div><p>'+safe(p.summary)+'</p><div class="tiny">Criterio metodológico</div><p>'+safe(p.protocol)+'</p>'+button("Examinar línea","program",p.id,p.id===state.program?"ghost active":"ghost"));
+function renderBrief(){
+ const d=state.data;
+ const ready=d.milestones.filter(x=>x.state==="verificado").length;
+ return section("INICIO · ESTADO PÚBLICO","Próximos pasos y resultados","Preparar, publicar y demostrar utilidad son hitos distintos. Esta sede no reutiliza los datos privados de ningún otro laboratorio.")+
+ box('<div class="item-row wrap"><div><h3>Registro público experimental</h3><p>Versión funcional con muestras sintéticas y revisión de procedimientos.</p></div>'+tag("Sin predicciones reales","alert")+'</div>'+
+ '<div class="section-grid three"><div><div class="card-number">'+d.programs.length+'</div><div class="tiny">Líneas de estudio</div></div><div><div class="card-number">'+ready+'/'+d.milestones.length+'</div><div class="tiny">Pasos técnicos verificados</div></div><div><div class="card-number">0</div><div class="tiny">Pronósticos prospectivos acreditados</div></div></div>','highlight')+
+ section("LECTURA RÁPIDA","Qué se puede explorar","Cada módulo funciona con un contrato independiente. No se ha transferido ningún motor privado ni sus historiales.")+
+ cards([
+ ["Árbol de futuros","Escenarios alternativos y supuestos explícitos. No son pronósticos.", "navigate","futures"],
+ ["Evidencia y modelos","Evaluación probabilística sintética comparada con un baseline.", "navigate","science"],
+ ["Programa de investigación","Mapa de líneas, protocolo, hitos y bloqueos.", "navigate","overview"],
+ ["Crear investigaciones","Conectar hipótesis y preparar ideas y guiones locales.", "navigate","ideas"]
+ ])+syntheticWarning()+section("CRITERIOS","De la exploración a la evidencia","Qué deberá comprobarse antes de publicar datos o afirmaciones reales.")+methods();
+}
+function renderFutures(){
+ const d=state.data;
+ const chosen=d.branches.find(x=>x.id===state.scenario)||d.branches[0];
+ return section("PREDICCIONES · EXPLORADOR","Árbol de posibilidades","Exploración de mecanismos hipotéticos. Los porcentajes siguientes son pesos fijados para la demostración; no están estimados a partir de resultados reales.")+
+ '<div class="section-grid three">'+d.branches.map(b=>box('<div class="item-row wrap"><h3>'+safe(b.name)+'</h3>'+tag(formatPct(b.weight))+'</div>'+percentageBar(b.weight)+'<p>'+safe(b.mechanism)+'</p>'+button("Explorar trayectoria","scenario",b.id,b.id===chosen.id?"ghost active":"ghost"),b.id===chosen.id?"highlight":"")).join("")+'</div>'+
+ '<div class="two-col">'+box('<div class="tiny">TRAYECTORIA ELEGIDA</div><h3>'+safe(chosen.name)+'</h3><div class="tree">'+d.branches.map(b=>'<div class="scenario '+(chosen.id===b.id?"active":"")+'"><div class="tiny">ESTADO POSIBLE</div><strong>'+safe(b.name)+'</strong>'+percentageBar(b.weight)+'</div>').join("")+'</div><p>La partición del universo es hipotética; cualquier cambio de supuestos exige documentar una nueva versión.</p>')+
+ box('<h3>Lectura explicable</h3><p>'+safe(chosen.mechanism)+'</p><h4>Observación a vigilar</h4><p>'+safe(chosen.watch)+'</p><div class="notice">No hay resultados registrados ni probabilidades de países o eventos reales.</div>')+'</div>'+
+ section("PROBABILIDADES","Modelo y trayectoria","La demostración permite alternar entre estudios y visualizar sus probabilidades sobre etiquetas inventadas.")+
+ renderStudySelector()+box('<svg id="study-chart" class="chart-svg frame-chart" viewBox="0 0 760 285" role="img" aria-label="Probabilidades ficticias y etiquetas simuladas"></svg><div class="tiny">Azul: probabilidad del modelo. Puntos verdes: resultados sintéticos. Línea discontinua: referencia.</div>')+syntheticWarning();
+}
+function renderShadow(){
+ return section("PREDICCIONES · OBSERVATORIO","Riesgos 2027","Protocolo de observación futura. Un ranking experimental no equivale a probabilidades emitidas, y no debe publicarse sin comprobar origen, licencia y disponibilidad histórica.")+
+ '<div class="section-grid four">'+[
+ ["Cobertura de países","No disponible"],["Emisiones preregistradas","0"],["Resoluciones independientes","0"],["Validez prospectiva","No acreditada"]
+ ].map(([k,v])=>box('<div class="tiny">'+safe(k)+'</div><div class="card-number">'+safe(v)+'</div>')).join("")+'</div>'+
+ box('<h3>Condiciones para activar un observatorio público</h3><ul class="compact-list"><li>Universo, eventos y horizontes fijados ex ante.</li><li>Fuentes geográficas y temporales con derecho de redistribución.</li><li>Disponibilidad de cada variable antes del origen de predicción.</li><li>Probabilidades firmadas y selladas antes del desenlace.</li><li>Evaluación posterior contra referencia y publicación de errores.</li></ul>'+msg("No se publican puntuaciones por país ni un listado de riesgos porque aún no existe un dataset público independiente aprobado."),"soft")+
+ section("ESTADO","Registro de emisiones","Ausencia explícita de emisiones; no se deduce capacidad predictiva de un conjunto de pruebas sintéticas.")+
+ box('<div class="tiny">PREDICCIONES PÚBLICAS EMITIDAS</div><h3>Sin registros</h3><p>El módulo permanecerá sin cifras de riesgo hasta disponer de fuentes point-in-time y de un protocolo de publicación verificable.</p>');
+}
+function renderOverview(){
+ const d=state.data;
+ const selected=d.programs.find(x=>x.id===state.program)||d.programs[0];
+ return section("INVESTIGACIÓN · ESTRUCTURA","Mapa del proyecto","Líneas independientes conectadas mediante preguntas y controles de validación. La investigación aquí descrita es un programa, no una lista de predicciones confirmadas.")+
+ '<div class="section-grid">'+d.programs.map(programCard).join("")+'</div>'+
+ box('<div class="tiny">LÍNEA SELECCIONADA</div><h3>'+safe(selected.name)+'</h3><p>'+safe(selected.summary)+'</p><h4>Protocolo de salida</h4><p>'+safe(selected.protocol)+'</p><div class="notice info">Estado: '+safe(selected.state)+'. Los modelos y resultados originales requieren evaluación independiente antes de su incorporación.</div>')+
+ section("SINERGIAS","Arquitectura del laboratorio","Los estudios estructurales, los modelos de predicción, las simulaciones y la auditoría científica se desarrollan con controles comunes.")+
+ methods();
+}
+function renderStudySelector(){
+ return '<label class="field" style="max-width:460px">Estudio sintético <select id="study-selector">'+state.data.studies.map(s=>'<option value="'+safe(s.id)+'" '+(state.study===s.id?'selected':'')+'>'+safe(s.title)+'</option>').join("")+'</select></label>';
+}
+function renderScience(){
+ const d=state.data,rows=d.studies.map(s=>({s,score:score(s)}));
+ return section("INVESTIGACIÓN · EVIDENCIA","Qué hemos demostrado y qué no","Las cifras que aparecen en este apartado son resultados matemáticos válidos sobre muestras inventadas. No constituyen pruebas empíricas de anticipación de fenómenos colectivos.")+
+ '<div class="table-wrap"><table><thead><tr><th>Estudio sintético</th><th>Observaciones</th><th>Brier modelo</th><th>Brier referencia</th><th>Mejora relativa</th><th>Validez</th></tr></thead><tbody>'+rows.map(({s,score:r})=>'<tr><td>'+safe(s.title)+'</td><td>'+r.n+'</td><td>'+format(r.brier)+'</td><td>'+format(r.baselineBrier)+'</td><td>'+formatPct(r.skill)+'</td><td>Sintético</td></tr>').join("")+'</tbody></table></div>'+
+ section("REPRODUCIBILIDAD","Evaluación de un experimento","Selecciona un estudio para analizar las probabilidades ficticias y compararlas con su referencia fija.")+
+ renderStudySelector()+'<div class="two-col">'+box('<svg id="study-chart" class="chart-svg frame-chart" viewBox="0 0 760 285" role="img" aria-label="Evaluación probabilística ficticia"></svg>')+
+ box('<div class="tiny">CONTRASTE</div><div id="score-info"></div><p>La métrica de Brier mide el error cuadrático de probabilidades entre 0 y 1; valores menores indican menor error en este conjunto.</p>')+'</div>'+
+ section("REGLAS DE ADMISIÓN","Separar evaluación retrospectiva y prospectiva","Los test revisados y las simulaciones no pueden presentarse como rendimientos reales de un sistema de anticipación.")+methods()+syntheticWarning();
+}
+function renderOperations(){
+ const d=state.data;
+ return section("INVESTIGACIÓN · TRAZABILIDAD","Registro público","Inventario de experimentos de muestra y de sus limitaciones. No se transfieren registros de trabajo ni referencias a bases de datos ajenas.")+
+ '<div class="table-wrap"><table><thead><tr><th>ID de demostración</th><th>Objeto de estudio</th><th>Horizonte</th><th>Procedimiento</th><th>Estado</th></tr></thead><tbody>'+d.studies.map(s=>'<tr><td>'+safe(s.id)+'</td><td>'+safe(s.title)+'</td><td>'+safe(s.horizon)+'</td><td>'+safe(s.method)+'</td><td>'+tag("Ficticio")+'</td></tr>').join("")+'</tbody></table></div>'+
+ box('<h3>Control de origen</h3><p>El registro público requiere para cada futuro experimento: identificador nuevo, instante de emisión, conjunto de datos y edición, algoritmo versionado, horizonte y resolución externa independiente.</p>'+
+ msg("El registro privado de investigación, sus fuentes canónicas, sus notas y sus credenciales no forman parte de este sitio."),"soft")+
+ section("CÓMO PUBLICAREMOS","Contrato para nuevas evaluaciones","No se aceptan entradas sin información suficiente para comprobar el orden temporal entre pronóstico, datos y resolución.")+methods();
+}
+function renderRoadmap(){
+ const d=state.data;
+ const ms=d.milestones.filter(m=>state.filter==="todos"||m.state===state.filter);
+ const labels={verificado:"Verificado técnicamente",pendiente:"En preparación",bloqueado:"Bloqueado"};
+ return section("INVESTIGACIÓN · SEGUIMIENTO","Hitos y criterios","Cada verificación técnica tiene su evidencia. Completar una interfaz o un test no implica haber demostrado capacidad predictiva.")+
+ '<div class="button-group">'+[["todos","Todos"],["verificado","Verificados"],["pendiente","Pendientes"],["bloqueado","Bloqueados"]].map(([id,name])=>button(name,"filter",id,state.filter===id?"ghost active":"ghost")).join("")+'</div>'+
+ '<div class="stack" style="margin-top:14px">'+ms.map(m=>box('<div class="item-row wrap"><div><span class="tiny">'+safe(m.id)+' · '+safe(m.group)+'</span><h3>'+safe(m.title)+'</h3></div>'+tag(labels[m.state]||m.state,m.state==="bloqueado"?"alert":"")+'</div><p>'+safe(m.evidence)+'</p>')).join("")+'</div>'+
+ msg("Los estados de esta hoja de ruta describen únicamente la nueva aplicación pública y su demostración sintética.");
+}
+function renderIdeas(){
+ const d=state.data,items=[...d.ideas,...state.ideas];
+ const mapping=Object.fromEntries(d.programs.map(p=>[p.id,p.name]));
+ return section("CREAR · INVESTIGACIÓN","Ideas y sinergias","Visualiza las relaciones entre preguntas de investigación y líneas metodológicas. Puedes redactar una idea de trabajo en esta sesión sin enviarla a ningún servidor.")+
+ '<div class="section-grid three">'+items.map(x=>box('<div class="item-row wrap"><span class="tiny">'+safe(x.id)+'</span>'+tag(x.area)+'</div><h3>'+safe(x.title)+'</h3><p>'+safe(x.question)+'</p><div class="button-group">'+x.links.map(id=>tag(mapping[id]||id)).join("")+'</div>')).join("")+'</div>'+
+ section("PROPONER","Crear una hipótesis local","Esta herramienta funciona únicamente en memoria. Si recargas la página, los borradores se descartan.")+
+ '<form id="idea-form" class="panel" autocomplete="off"><div class="section-grid"><label class="field">Nombre de la hipótesis<input name="title" required maxlength="110" placeholder="Título contrastable"></label><label class="field">Línea de investigación<select name="program">'+d.programs.map(p=>'<option value="'+safe(p.id)+'">'+safe(p.name)+'</option>').join("")+'</select></label></div><label class="field">Pregunta falsable<textarea name="question" maxlength="600" required placeholder="¿Qué observación permitiría contrastarla?"></textarea></label><div class="form-actions"><button class="action primary" type="submit">Añadir a esta sesión</button>'+button("Exportar borradores JSON","export-ideas","","ghost")+'</div></form>'+
+ msg("No se guardan borradores en GitHub, Drive, cookies ni bases de datos. La exportación es una descarga local iniciada por ti.");
+}
+function renderVideo(){
+ const d=state.data;
+ const selected=d.studies.find(x=>x.id===state.study)||d.studies[0];
+ return section("CREAR · DIVULGACIÓN","Estudio audiovisual","Generador local de estructura narrativa para explicar hipótesis y limitaciones. No crea vídeos ni publica contenido por sí mismo.")+
+ '<div class="two-col">'+box('<h3>Guion de investigación</h3>'+renderStudySelector()+'<div class="field">Enfoque narrativo<select id="video-style"><option value="cientifico">Rigor y método</option><option value="divulgativo">Divulgación general</option><option value="critico">Evaluación crítica</option></select></div>'+button("Preparar guion","make-video","","action primary")+
+ '<p>El guion se produce en tu navegador a partir del estudio ficticio seleccionado.</p>')+
+ box('<div class="video-frame"><div><div class="eyebrow">IDEA LAB · ESTUDIO AUDIOVISUAL</div><h3>'+safe(selected.title)+'</h3><p>Guion local · Sin generación de vídeo</p></div></div>')+'</div>'+
+ box('<h3>Borrador narrativo</h3><textarea readonly id="video-output" aria-label="Guion audiovisual" style="min-height:195px">Elige un estudio y pulsa Preparar guion.</textarea><div class="form-actions">'+button("Copiar guion","copy-video","","ghost")+'</div><div class="tiny" id="copy-status"></div>')+
+ msg("No se añaden voz, imagen, música, logos externos ni testimonios ficticios. Todo resultado debe señalar sus fuentes y su carácter experimental.");
+}
+function svgNode(name,attrs={},content){
+ const elem=document.createElementNS("http://www.w3.org/2000/svg",name);
+ Object.entries(attrs).forEach(([key,value])=>elem.setAttribute(key,String(value)));
+ if(content!==undefined)elem.textContent=String(content);
+ return elem;
+}
+function updateChart(){
+ const svg=$("study-chart");if(!svg||!state.data)return;
+ const s=state.data.studies.find(x=>x.id===state.study)||state.data.studies[0];
+ svg.replaceChildren();
+ const x=i=>55+i*125,y=v=>242-202*v;
+ [0,.25,.5,.75,1].forEach(p=>{svg.append(svgNode("line",{x1:55,x2:710,y1:y(p),y2:y(p),stroke:"#344958","stroke-width":1}),svgNode("text",{x:4,y:y(p)+4,fill:"#8caabd","font-size":12},Math.round(p*100)+" %"));});
+ svg.append(svgNode("line",{x1:55,x2:710,y1:y(s.baseline),y2:y(s.baseline),stroke:"#c8a16a","stroke-dasharray":"6 6","stroke-width":1.8}));
+ const points=s.probabilities.map((p,i)=>x(i)+","+y(p)).join(" ");
+ svg.append(svgNode("polyline",{points,stroke:"#82d5e8","stroke-width":2.9,fill:"none","stroke-linejoin":"round"}));
+ s.probabilities.forEach((p,i)=>{svg.append(svgNode("circle",{cx:x(i),cy:y(p),r:5,fill:"#82d5e8"}),svgNode("circle",{cx:x(i),cy:y(s.outcomes[i]),r:5,stroke:"#071318","stroke-width":1.5,fill:"#87d8bd"}),svgNode("text",{x:x(i),y:269,"text-anchor":"middle","font-size":12,fill:"#91a7b7"},s.issued[i]));});
+ const info=$("score-info");
+ if(info){
+ const r=score(s);
+ info.innerHTML='<h3>'+safe(s.title)+'</h3><p>'+safe(s.question)+'</p><div class="grid-stats"><div><strong>'+format(r.brier)+'</strong><span>Brier sintético</span></div><div><strong>'+format(r.baselineBrier)+'</strong><span>Referencia</span></div><div><strong>'+formatPct(r.skill)+'</strong><span>Mejora ficticia</span></div></div>';
  }
 }
-function branches(data){
- const grid=$("branches-grid");grid.replaceChildren();
- for(const b of data.branches){
-  const card=textNode("article",undefined,"panel"),head=textNode("div",undefined,"panel-top");
-  head.append(textNode("h3",b.name),textNode("span",Math.round(b.weight*100)+" % supuesto","chip"));card.append(head);
-  const bar=document.createElement("div");bar.style.cssText="height:9px;background:#e6ebef;border-radius:8px;margin:1rem 0;overflow:hidden";
-  const fill=document.createElement("div");fill.style.cssText="height:100%;background:#19376d;border-radius:8px;width:"+Math.round(b.weight*100)+"%";bar.append(fill);card.append(bar);
-  const m=textNode("p");m.append(textNode("strong","Mecanismo: "),document.createTextNode(b.mechanism));card.append(m);
-  const w=textNode("p");w.append(textNode("strong","Señal a vigilar: "),document.createTextNode(b.watch));card.append(w);grid.append(card);
- }
-}
-function chart(s){
- const svg=$("prob-chart");svg.replaceChildren();
- const p=s.probabilities,n=p.length,x=i=>65+i*130/(n-1)*5,y=v=>240-190*v;
- [0,.25,.5,.75,1].forEach(v=>{svg.append(svgNode("line",{x1:65,x2:735,y1:y(v),y2:y(v),stroke:"#e1e7ee"}),svgNode("text",{x:13,y:y(v)+4,"font-size":12,fill:"#6c7e94"},Math.round(v*100)+"%"));});
- svg.append(svgNode("line",{x1:65,x2:735,y1:y(s.baseline),y2:y(s.baseline),stroke:"#bc9850","stroke-dasharray":"5 5","stroke-width":2}));
- svg.append(svgNode("polyline",{points:p.map((v,i)=>x(i)+","+y(v)).join(" "),fill:"none",stroke:"#19376d","stroke-width":3,"stroke-linecap":"round","stroke-linejoin":"round"}));
- p.forEach((v,i)=>{
-  svg.append(svgNode("circle",{cx:x(i),cy:y(v),r:5,fill:"#19376d"}));
-  svg.append(svgNode("circle",{cx:x(i),cy:y(s.outcomes[i]),r:5,fill:"#2f8c78",stroke:"white","stroke-width":2}));
-  svg.append(svgNode("text",{x:x(i),y:265,"text-anchor":"middle","font-size":12,fill:"#63758c"},s.issued[i]));
+function render(){
+ if(!state.data)return;
+ const group=viewToGroup[state.view];
+ document.querySelectorAll("[data-section]").forEach(button=>{
+  const active=button.dataset.section===group;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));
  });
- $("figure-title").textContent=s.title;
- $("figure-note").textContent="Azul: probabilidades ficticias. Verde: desenlaces inventados (0 o 1). Línea discontinua: referencia fija.";
+ const sub=$("subtabs");sub.replaceChildren();sub.hidden=group==="brief";
+ if(group!=="brief")for(const [id,label] of groupViews[group]){
+  const b=document.createElement("button");b.type="button";b.textContent=label;b.dataset.action="navigate";b.dataset.value=id;
+  b.classList.toggle("active",state.view===id);sub.append(b);
+ }
+ const views={brief:renderBrief,futures:renderFutures,shadow2027:renderShadow,overview:renderOverview,
+  science:renderScience,operations:renderOperations,roadmap:renderRoadmap,ideas:renderIdeas,video:renderVideo};
+ $("app").innerHTML=views[state.view]();
+ updateChart();
 }
-function evaluation(s){
- const m=score(s);$("detail-title").textContent=s.title;$("detail-question").textContent=s.question;
- $("detail-brier").textContent=m.brier.toFixed(3);$("detail-baseline").textContent=m.baselineBrier.toFixed(3);
- $("detail-skill").textContent=m.skill===null?"N/D":(100*m.skill).toFixed(1)+" %";chart(s);
- const body=$("eval-rows");body.replaceChildren();
- for(const r of calibration(s)){const tr=textNode("tr");for(const [val,cls] of [[r.issued,""],[(100*r.p).toFixed(0)+" %","number"],[(100*s.baseline).toFixed(0)+" %","number"],[String(r.y),"number"]])tr.append(textNode("td",val,cls));body.append(tr);}
+function navigate(view){
+ if(!viewIds.has(view))return;
+ state.view=view;
+ const url=new URL(location.href);url.searchParams.set("view",view);history.pushState({view},"",url);
+ render();
+ window.scrollTo({top:0,behavior:"auto"});
 }
-async function main(){
- const res=await fetch("./data/demo.json",{cache:"no-store"});if(!res.ok)throw Error("Data unavailable");
- const data=await res.json();verify(data);
- $("stat-studies").textContent=data.studies.length;$("stat-obs").textContent=data.studies.reduce((a,s)=>a+s.outcomes.length,0);$("stat-branches").textContent=data.branches.length;
- studies(data);branches(data);const select=$("study-select");for(const s of data.studies){const op=textNode("option",s.title);op.value=s.id;select.append(op);}
- evaluation(data.studies[0]);select.addEventListener("change",()=>evaluation(data.studies.find(s=>s.id===select.value)||data.studies[0]));
+async function load(){
+ if(state.busy)return;state.busy=true;$("refresh").disabled=true;$("sync-status").textContent="Validando el registro público…";
+ try{
+  const response=await fetch("./data/demo.json",{cache:"no-store"});if(!response.ok)throw new Error("Source unavailable");
+  const data=await response.json();verify(data);
+  for(const key of ["programs","milestones","ideas"])if(!Array.isArray(data[key]))throw new Error("Incomplete public catalogue");
+  state.data=data;state.scenario=state.scenario||data.branches[0].id;state.program=state.program||data.programs[0].id;state.study=state.study||data.studies[0].id;
+  $("count-studies").textContent=data.studies.length;$("count-models").textContent=data.programs.length;
+  $("count-predictions").textContent="0";$("count-evaluated").textContent="0";
+  $("as-of").textContent="Fuente: muestra sintética · edición pública";
+  $("sync-status").textContent="Registro público cargado · sin fuentes privadas ni pronósticos reales";
+  render();
+ }catch{
+  $("sync-status").textContent="Fuente pública no disponible o inválida";
+  if(!state.data)$("app").innerHTML=msg("No se ha podido cargar el registro público. No se muestran resultados de respaldo inventados.");
+ }finally{state.busy=false;$("refresh").disabled=false;}
 }
-main().catch(()=>{$("figure-note").textContent="La muestra sintética no está disponible o ha fallado la validación.";});
+function makeVideo(){
+ const s=state.data.studies.find(x=>x.id===state.study)||state.data.studies[0];
+ const style=$("video-style")?.value||"cientifico";
+ const opener=style==="divulgativo"?"¿Se puede anticipar este fenómeno?":
+ style==="critico"?"¿Estamos confundiendo resultados de una simulación con una predicción?":
+ "Una hipótesis es útil cuando admite un contraste independiente.";
+ state.videoText=[
+ "IDEA LAB · Guion de demostración (datos sintéticos)","",
+ "INTRODUCCIÓN",""+opener,"Pregunta: "+s.question,"",
+ "MÉTODO","Diseño: "+s.method,"Horizonte: "+s.horizon,"",
+ "CONTRASTE","Mostrar la regla anterior a los datos y comparar con una referencia.",
+ "Este ejemplo no utiliza observaciones reales y no demuestra capacidad predictiva.","",
+ "LÍMITES",s.limits,"",
+ "CIERRE","Antes de afirmar utilidad: datos point-in-time, evaluación fuera de muestra y resultados resueltos."
+ ].join("\n");
+ const out=$("video-output");if(out)out.value=state.videoText;
+}
+function exportIdeas(){
+ const output={data_class:"local_draft",version:1,ideas:state.ideas};
+ const url=URL.createObjectURL(new Blob([JSON.stringify(output,null,2)],{type:"application/json"}));
+ const link=document.createElement("a");link.href=url;link.download="borradores-investigacion.json";document.body.append(link);link.click();link.remove();
+ URL.revokeObjectURL(url);
+}
+document.querySelectorAll("[data-section]").forEach(button=>button.addEventListener("click",()=>{
+ const group=button.dataset.section;navigate(groupViews[group][0][0]);
+}));
+$("refresh").addEventListener("click",load);
+$("app").addEventListener("click",async event=>{
+ const b=event.target.closest("button[data-action]");if(!b)return;
+ const {action,value}=b.dataset;
+ switch(action){
+ case "navigate":navigate(value);break;
+ case "scenario":state.scenario=value;render();break;
+ case "program":state.program=value;render();break;
+ case "filter":state.filter=value;render();break;
+ case "export-ideas":exportIdeas();break;
+ case "make-video":makeVideo();break;
+ case "copy-video":
+  if(!state.videoText)makeVideo();
+  try{await navigator.clipboard.writeText(state.videoText);if($("copy-status"))$("copy-status").textContent="Guion copiado.";}
+  catch{if($("copy-status"))$("copy-status").textContent="Selecciona el texto para copiarlo manualmente.";}
+  break;
+ }
+});
+$("subtabs").addEventListener("click",event=>{
+ const b=event.target.closest("button[data-action=navigate]");if(b)navigate(b.dataset.value);
+});
+$("app").addEventListener("change",event=>{
+ if(event.target.id==="study-selector"){state.study=event.target.value;render();}
+});
+$("app").addEventListener("submit",event=>{
+ if(event.target.id!=="idea-form")return;
+ event.preventDefault();const form=new FormData(event.target);
+ const title=String(form.get("title")||"").trim(),question=String(form.get("question")||"").trim(),program=String(form.get("program")||"");
+ if(!title||!question||title.length>110||question.length>600||!state.data.programs.some(p=>p.id===program))return;
+ state.ideas.push({id:"LOCAL-"+(state.ideas.length+1),title,question,area:"Borrador local",links:[program]});
+ render();
+});
+window.addEventListener("popstate",()=>{
+ const view=new URLSearchParams(location.search).get("view");
+ state.view=viewIds.has(view)?view:"brief";
+ render();
+});
+load();
