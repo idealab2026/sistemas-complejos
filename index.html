@@ -1,17 +1,59 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0b2447"><meta name="description" content="IDEA LAB · Laboratorio público de sistemas complejos, escenarios y evaluación rigurosa de pronósticos. Muestra sintética.">
-<meta property="og:title" content="Sistemas complejos · IDEA LAB"><link rel="icon" type="image/svg+xml" href="./favicon.svg"><link rel="stylesheet" href="./styles.css"><title>Sistemas complejos · IDEA LAB</title></head><body>
-<header class="topbar"><div class="shell topinner"><a class="brand" href="https://idealab2026.github.io/" aria-label="Volver a IDEA LAB"><img src="./logo.svg" alt="IDEA LAB" width="145" height="35"><span>Sistemas complejos</span></a><nav aria-label="Secciones"><a href="#estudios">Estudios</a><a href="#escenarios">Escenarios</a><a href="#evaluacion">Evaluación</a><a href="#metodo">Método</a><a href="https://idealab2026.github.io/">IDEA LAB ↗</a></nav></div></header>
-<main class="shell">
-<section class="hero"><span class="kicker">IDEA LAB · Investigación de dinámicas colectivas</span><h1>Comprender sistemas sociales sin fingir certezas.</h1><p class="lead">Exploramos mecanismos colectivos, hipótesis contrastables y modelos probabilísticos. Un resultado histórico no demuestra capacidad para anticipar el futuro: exigimos fechas de emisión, fuentes disponibles en ese momento y comparadores verificables.</p><span class="flag">◆ LABORATORIO SINTÉTICO · NO SON PRONÓSTICOS REALES</span>
-<div class="summary"><article class="stat"><span>Estudios metodológicos</span><strong id="stat-studies">—</strong><small>Preguntas ficticias</small></article><article class="stat"><span>Observaciones de prueba</span><strong id="stat-obs">—</strong><small>Etiquetas inventadas</small></article><article class="stat"><span>Escenarios</span><strong id="stat-branches">—</strong><small>Pesos supuestos</small></article><article class="stat"><span>Estado científico</span><strong style="font-size:1.22rem">No validado</strong><small>Sin previsiones reales</small></article></div></section>
-<section class="section" id="estudios"><div class="section-heading"><div><span class="kicker">01 · Agenda de investigación</span><h2>Preguntas y experimentos</h2></div></div><p>Cada línea debe fijar de antemano evento, población, horizonte y regla de resolución. Los tres estudios siguientes solo sirven para demostrar la estructura de investigación y su trazabilidad metodológica.</p><div class="grid" id="studies-grid"></div></section>
-<section class="section" id="escenarios"><div class="section-heading"><div><span class="kicker">02 · Árbol de posibilidades</span><h2>Trayectorias alternativas</h2></div></div><p>Un árbol de escenarios representa hipótesis condicionadas, no destinos inevitables. Los porcentajes mostrados son supuestos ilustrativos que suman el 100 %, no estimaciones estadísticas de acontecimientos reales.</p><div id="branches-grid" class="grid"></div><div class="info" style="margin-top:1rem"><strong>Interpretación:</strong> modificar un supuesto debe crear una versión nueva del escenario. No se permiten ajustes a posteriori para hacer coincidir el árbol con resultados conocidos.</div></section>
-<section class="section" id="evaluacion"><div class="section-heading"><div><span class="kicker">03 · Evaluación cuantitativa</span><h2>Probabilidades frente a desenlaces</h2></div><label class="field" for="study-select">Estudio <select id="study-select" aria-label="Seleccionar estudio"></select></label></div><p>Calculamos el Brier score (error cuadrático medio probabilístico) y su mejora relativa respecto a una probabilidad de referencia constante. **Estas puntuaciones solo describen números inventados** y no acreditan una predicción o un backtest real.</p>
-<div class="data-layout"><div class="panel figure"><div class="panel-top"><h3 id="figure-title">Evaluación ilustrativa</h3><span class="chip">Probabilidad: 0–100 %</span></div><svg id="prob-chart" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" role="img" aria-label="Probabilidades y desenlaces ficticios"><text x="25" y="45">Preparando gráfico…</text></svg><p id="figure-note"></p></div>
-<aside class="panel"><span class="label">Modelo sintético seleccionado</span><h3 id="detail-title">—</h3><p id="detail-question">—</p><div class="metrics"><div class="metric"><strong id="detail-brier">—</strong><small>Brier simulado</small></div><div class="metric"><strong id="detail-baseline">—</strong><small>Brier referencia</small></div><div class="metric"><strong id="detail-skill">—</strong><small>Brier Skill ficticio</small></div></div><p class="info"><strong>Límite:</strong> seis observaciones sintéticas no permiten atribuir calibración, causalidad, potencia estadística ni eficacia predictiva.</p></aside></div>
-<div class="table-scroll" style="margin-top:1rem"><table><thead><tr><th>Periodo ficticio</th><th class="number">Probabilidad del modelo</th><th class="number">Referencia</th><th class="number">Desenlace ficticio</th></tr></thead><tbody id="eval-rows"></tbody></table></div></section>
-<section class="section" id="metodo"><span class="kicker">04 · Criterios de publicación</span><h2>Una predicción necesita una prueba.</h2><div class="method"><div><h3>1. Definición anterior</h3><p>Congelar evento, fecha y universo antes de observar el resultado; evitar redefinir el objetivo al terminar.</p></div><div><h3>2. Fuentes point-in-time</h3><p>Usar la información realmente disponible en el instante de emisión, no revisiones retrospectivas.</p></div><div><h3>3. Evaluación fuera de muestra</h3><p>Comparar con baselines, incertidumbre y cobertura; informar también errores y no emisiones.</p></div></div><p class="info"><strong>Estado actual:</strong> esta web es una infraestructura funcional de divulgación científica creada desde cero. La investigación y las predicciones reales no se han trasladado a este sitio.</p></section>
-</main><footer class="footer"><div class="shell footer-flex"><span>IDEA LAB · Laboratorio experimental · Datos sintéticos</span><span><a href="https://idealab2026.github.io/">Web corporativa</a> · <a href="https://github.com/idealab2026/sistemas-complejos">Código público</a></span></div></footer>
-<script type="module" src="./src/site.mjs"></script></body></html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#060b11"><meta name="color-scheme" content="dark">
+<meta name="description" content="Psicohistoria · Laboratorio público de IDEA LAB para el estudio de fenómenos sociales, escenarios y pronósticos sometidos a verificación.">
+<meta property="og:title" content="Psicohistoria | IDEA LAB">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg"><link rel="stylesheet" href="./styles.css">
+<title>Psicohistoria · IDEA LAB</title>
+</head>
+<body>
+<div class="ambient" aria-hidden="true"></div>
+<div class="shell">
+  <header class="header">
+    <a class="corporate-link" href="https://idealab2026.github.io/" aria-label="Ir a IDEA LAB"><img src="./logo.svg" width="128" height="30" alt="IDEA LAB"><span>IDEA LAB</span></a>
+    <div class="header-mid">PSICOHISTORIA <span class="version">LAB PÚBLICO · v0.2</span></div>
+    <button id="refresh" class="refresh" type="button" aria-label="Actualizar el registro público">↻ <span>Actualizar</span></button>
+  </header>
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-content">
+        <div class="eyebrow">LABORATORIO CIENTÍFICO <span class="small-dot"></span> INVESTIGACIÓN EN CURSO</div>
+        <h1 id="hero-title">PSICOHISTORIA</h1>
+        <p class="hero-lead">¿Podemos anticipar fenómenos sociales? Investigación, hipótesis y evaluación separadas de las afirmaciones que aún requieren demostración.</p>
+        <div class="pills"><span class="pill"><i class="signal"></i> DATOS PÚBLICOS DE DEMOSTRACIÓN</span><span class="pill subdued" id="as-of">Sincronizando conjunto sintético…</span></div>
+      </div>
+      <svg class="orbital" viewBox="0 0 300 300" aria-hidden="true" focusable="false">
+        <defs><radialGradient id="glow"><stop stop-color="#92b1bb" stop-opacity=".28"/><stop offset="1" stop-color="#92b1bb" stop-opacity=".015"/></radialGradient><pattern id="pts" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1" fill="#bfd3d9" opacity=".48"/></pattern><clipPath id="sphere"><circle cx="150" cy="150" r="95"/></clipPath></defs>
+        <circle cx="150" cy="150" r="135" fill="none" stroke="#3a5563" stroke-width=".8" stroke-dasharray="1 8"/><circle cx="150" cy="150" r="115" fill="none" stroke="#3a5563" stroke-width=".8" stroke-dasharray="1 7"/>
+        <circle cx="150" cy="150" r="95" fill="url(#glow)" stroke="#7695a5" stroke-opacity=".4"/>
+        <g clip-path="url(#sphere)"><circle cx="150" cy="150" r="95" fill="url(#pts)"/></g>
+        <g fill="none" stroke="#a9c9d2" stroke-width="1"><ellipse cx="150" cy="150" rx="138" ry="49" transform="rotate(-30 150 150)" opacity=".8"/><ellipse cx="150" cy="150" rx="136" ry="48" transform="rotate(58 150 150)" opacity=".36"/></g><circle cx="262" cy="80" r="2.7" fill="#e9f5fa"/><circle cx="38" cy="217" r="3" fill="#80e7f0"/>
+      </svg>
+    </section>
+    <div class="sync" id="sync-status" role="status" aria-live="polite">Comprobando procedencia del registro público…</div>
+    <section class="metrics" aria-label="Indicadores generales">
+      <article class="metric"><span>ESTUDIOS METODOLÓGICOS</span><strong id="count-studies">—</strong><small>Protocolos sintéticos</small></article>
+      <article class="metric"><span>MODELOS DE REFERENCIA</span><strong id="count-models">—</strong><small>Ejemplos comparables</small></article>
+      <article class="metric"><span>PRONÓSTICOS REALES EMITIDOS</span><strong id="count-predictions">0</strong><small>No importados</small></article>
+      <article class="metric"><span>EVALUACIONES PROSPECTIVAS</span><strong id="count-evaluated">0</strong><small>No acreditadas</small></article>
+    </section>
+    <nav class="primary-tabs" aria-label="Secciones principales">
+      <button data-section="brief" type="button">Inicio</button>
+      <button data-section="predictions" type="button">Predicciones</button>
+      <button data-section="research" type="button">Investigación</button>
+      <button data-section="create" type="button">Crear</button>
+    </nav>
+    <nav class="subtabs" id="subtabs" aria-label="Vistas de la sección" hidden></nav>
+    <section id="app" aria-live="polite" aria-label="Contenido del laboratorio">
+      <div class="panel">Preparando el laboratorio de investigación…</div>
+    </section>
+  </main>
+  <footer class="footer">
+    <span>IDEA LAB · Psicohistoria · Evaluación científica independiente</span>
+    <div><a href="https://idealab2026.github.io/">Web corporativa</a><span class="sep">·</span> Versión pública experimental</div>
+  </footer>
+</div>
+<script type="module" src="./src/site.mjs"></script>
+</body></html>
