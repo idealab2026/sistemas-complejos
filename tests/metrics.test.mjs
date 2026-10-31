@@ -1,0 +1,10 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {verify,brier,score,calibration} from "../src/metrics.mjs";
+const data=JSON.parse(readFileSync(new URL("../data/demo.json",import.meta.url),"utf8"));
+test("Synthetic data is mandatory",()=>{assert.equal(verify(data),true);assert.throws(()=>verify({...data,meta:{data_class:"observed"}}));});
+test("Brier score arithmetic",()=>{assert.equal(brier([0,1],[0,1]),0);assert.ok(Math.abs(brier([.5,.5],[0,1])-.25)<1e-10);});
+test("Comparable baseline and fixed evaluation size",()=>{const m=score(data.studies[0]);assert.equal(m.n,6);assert.ok(m.brier>=0&&m.brier<=1);assert.ok(m.baselineBrier>0);assert.equal(calibration(data.studies[0]).length,6);});
+test("Scenario weights sum to one",()=>assert.ok(Math.abs(data.branches.reduce((a,b)=>a+b.weight,0)-1)<1e-10));
+test("Reject inconsistent evidence and weights",()=>{const s={...data.studies[0],outcomes:[1]};assert.throws(()=>verify({...data,studies:[s,...data.studies.slice(1)]}));assert.throws(()=>verify({...data,branches:[{...data.branches[0],weight:.6},...data.branches.slice(1)]}));});
