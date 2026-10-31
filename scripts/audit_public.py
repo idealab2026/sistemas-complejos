@@ -7,8 +7,8 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE = {"index.html", "styles.css", "favicon.svg", "logo.svg", "src/site.mjs", "src/metrics.mjs", "data/demo.json"}
-REPOSITORY = RELEASE | {"README.md", "scripts/audit_public.py", "tests/metrics.test.mjs", ".github/workflows/pages.yml"}
+RELEASE = {"index.html", "styles.css", "favicon.svg", "logo.svg", "src/site.mjs", "src/metrics.mjs", "src/research.mjs", "data/demo.json", "data/research.json"}
+REPOSITORY = RELEASE | {"README.md", "scripts/audit_public.py", "tests/metrics.test.mjs", "tests/research.test.mjs", ".github/workflows/pages.yml"}
 issues = []
 files = {str(p.relative_to(ROOT)) for p in ROOT.rglob("*") if p.is_file() and ".git" not in p.parts}
 if unknown := sorted(files - REPOSITORY):
@@ -38,12 +38,25 @@ for path in sorted(files):
     if path not in REPOSITORY: continue
     source=(ROOT/path).read_text(encoding="utf8")
     if path in RELEASE or path == "README.md":
+        for match in re.finditer(r"https?://(?:www\\.)?github\\.com/([A-Za-z0-9_-]+)/", source, flags=re.I):
+            if match.group(1).lower() != "idealab2026":
+                issues.append("Non-institutional repository reference")
         if re.search(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}",source):
             issues.append("Email address found in public content")
     if re.search(r"-----BEGIN [^-]+PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{30,}",source):
         issues.append("Credential-like content")
     if re.search(r"https?://(?:localhost|127\.0\.0\.1|[^\s/]*\.workers\.dev)",source,re.I):
         issues.append("Unexpected local or backend reference")
+catalogue=ROOT/"data/research.json"
+if catalogue.exists():
+    try:
+        data=json.loads(catalogue.read_text(encoding="utf8"))
+        if data.get("class")!="public_research_program" or data.get("forecast_issued")!=0 or data.get("prospective_results_verified")!=0:
+            issues.append("Unverified scientific claim in public dataset")
+        if len(data.get("programs",[]))!=7:
+            issues.append("Incomplete scientific programme")
+    except (OSError,ValueError):
+        issues.append("Invalid scientific programme")
 sample=ROOT/"data/demo.json"
 if sample.exists():
     try:
