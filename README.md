@@ -1,23 +1,35 @@
-# Sistemas complejos · IDEA LAB
+# PSICOHISTORIA · IDEA LAB
 
-Laboratorio público independiente de investigación exploratoria sobre dinámica colectiva, escenarios y evaluación de pronósticos.
+Laboratorio público de investigación de sistemas complejos, fenómenos colectivos y evaluación de pronósticos.
 
-**Estado de la versión:** demostración funcional basada exclusivamente en registros sintéticos. Ni probabilidades ni resultados son pronósticos reales.
+**Estado actual: versión pública experimental, reconstruida de forma independiente.** El sitio incluye nueve vistas navegables con formato oscuro, mapa de investigación, explorador de escenarios, evaluación probabilística, registro y hoja de ruta, y herramientas locales de preparación de hipótesis y guiones.
 
-## Arquitectura
-- Sitio estático sin dependencias externas, credenciales ni servicios privados.
-- Datos demostrativos en `data/demo.json`, con el campo obligatorio `data_class: synthetic`.
-- Contratos y cálculos reproducibles en `src/metrics.mjs`.
-- Comprobación de esquema, prueba unitaria, auditoría del paquete y control de autoría antes de GitHub Pages.
+## Navegación
 
-## Reglas científicas
-Distinguir hipótesis, pruebas retrospectivas, simulaciones y resultados prospectivos. No reclamar capacidad predictiva validada sin fuentes punto-en-tiempo, métricas fuera de muestra, baseline y registro previo al desenlace.
+| Grupo | Vistas | Función pública |
+| --- | --- | --- |
+| Inicio | Resumen | Estado, líneas científicas y siguientes pasos |
+| Predicciones | Explorador; Riesgos 2027 | Árbol sintético, supuestos y protocolo de emisión |
+| Investigación | Mapa; Evidencia; Registro; Hitos | Estudios de demostración, Brier score, baselines y trazabilidad |
+| Crear | Ideas y sinergias; Estudio audiovisual | Borradores locales y guion de texto |
 
-## Publicación de datos reales
-No importar datasets ni historial de otros proyectos. La admisión requiere revisión de licencias, procedencia y metadatos, nuevas claves públicas y pruebas temporales. El contrato de producción se desarrollará independientemente.
+**Límites de esta versión:** no contiene los históricos reales, catálogos de países, predicciones de cohortes, modelos calibrados con observaciones oficiales ni los componentes de generación audiovisual. Tampoco permite escritura en un backend: las ideas se generan en memoria y pueden exportarse localmente. Ninguna cifra sintética es una previsión real.
 
-## Privacidad
-No se suben datasets privados, credenciales, enlaces de infraestructura ajena ni antecedentes personales. Los commits se generan con la identidad institucional. El sitio se publica exclusivamente desde una lista blanca de archivos. La ausencia de vínculo absoluto con trabajos públicos previos no es demostrable.
+## Ejecución
 
-## Licencia
-Todos los derechos reservados salvo los derechos expresamente indicados por las dependencias o fuentes, si se incorporan en el futuro.
+Sitio HTML/CSS/JS sin framework ni dependencias externas. Para previsualizarlo, servir la carpeta mediante un servidor estático (por ejemplo, `python3 -m http.server 8000`) y abrir la raíz del servidor. No abrir `index.html` directamente mediante `file://`, porque la carga del JSON usa `fetch`.
+
+```bash
+node --test tests/metrics.test.mjs
+python3 scripts/audit_public.py
+```
+
+GitHub Actions ejecuta las pruebas, comprueba los autores, audita el árbol público y publica exclusivamente `index.html`, `styles.css`, `logo.svg`, `favicon.svg`, `src/site.mjs`, `src/metrics.mjs` y `data/demo.json`. Ningún README, workflow, archivo de desarrollo o configuración de repositorio forma parte del paquete desplegado.
+
+## Requisitos para datos reales
+
+Toda observación requiere licencia de redistribución, fuente primaria, fecha de publicación, edición temporal recuperable y protocolo de evaluación. Los pronósticos necesitan fecha de emisión verificable anterior al desenlace y comparación con un baseline. Las evaluaciones retrospectivas no se presentarán como pruebas prospectivas.
+
+El sistema es independiente y no incluye credenciales, integración con servicios privados ni importación del historial de desarrollo de terceros. La ausencia de referencias explícitas no garantiza imposibilidad de atribución mediante comparación con información pública anterior.
+
+© IDEA LAB. Derechos reservados salvo indicación expresa.
