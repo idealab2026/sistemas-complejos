@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {buildScientificNetwork,createResearchFrameLoop} from "../src/neural.mjs";
 import {renderVerifiedGeometry} from "../src/markov-svg.mjs";
-import {scientificNeuralPanel,syntheticFourStateModel,scientificMarkovPanel,TRANSITIONS} from "../src/lab-renderers.mjs";
+import {scientificNeuralPanel,syntheticFourStateModel,scientificMarkovPanel,PUBLIC_CALENDAR_ORIGINS,TRANSITIONS} from "../src/lab-renderers.mjs";
 const demo=JSON.parse(readFileSync(new URL("../data/demo.json",import.meta.url),"utf8"));
 test("Research network geometry has two lobes and all four conceptual tracks",()=>{
  const g=buildScientificNetwork(16);
@@ -49,12 +49,18 @@ test("Scientific SVG renderer displays the complete eight-column time tree and s
  assert.match(svg,/data-fnode="7:3"/);
  assert.match(svg,/data-fedge="7:/);
  assert.match(svg,/future-core-glow/);
- assert.match(svg,/T\+7/);
+ assert.match(svg,/>2025<\/text>/);
+ assert.match(svg,/>2018<\/text>/);
+ assert.match(svg,/>2019<\/text>/);
  assert.doesNotMatch(svg,/future-observed-halo|REAL · FINAL/);
  const selected=renderVerifiedGeometry(d,4,{kind:"node",level:3,state:1},false,true);
  assert.match(selected,/class="future-node selected"/);
  const html=scientificMarkovPanel({horizon:3});
- assert.equal((html.match(/data-action="markov-year"/g)||[]).length,8);
+ assert.equal((html.match(/data-action="markov-year"/g)||[]).length,6);
+ assert.equal((html.match(/data-action="markov-origin"/g)||[]).length,2);
+ assert.match(html,/>2018<\/strong>/);
+ assert.match(html,/>2019<\/strong>/);
+ assert.match(html,/>2025<\/strong>/);
  assert.match(html,/NINGÚN PAÍS REAL/);
  assert.throws(()=>syntheticFourStateModel(22));
  assert.throws(()=>scientificMarkovPanel({horizon:7}));
@@ -68,4 +74,44 @@ test("Public release uses the source-based canvas, not the substitute orbit/tree
  assert.doesNotMatch(site,/stateTransitionDiagram\(state\.flowState/);
  const index=readFileSync(new URL("../index.html",import.meta.url),"utf8");
  assert.match(index,/src\/site\.mjs/);
+});
+
+
+test("Every scientific-tree column has a real calendar year, including full 2016–2025 and 2020–2025 ranges",()=>{
+ assert.deepEqual(PUBLIC_CALENDAR_ORIGINS,[2016,2020]);
+ for(const [origin,cutoff,span] of [[2016,2014,10],[2020,2018,6]]){
+  const model=syntheticFourStateModel(span,origin);
+  assert.equal(model.cutoff,cutoff);
+  assert.equal(model.origin,origin);
+  assert.equal(model.levels.length,span+2);
+  assert.deepEqual(model.levels.map(x=>x.year),
+   Array.from({length:span+2},(_,i)=>cutoff+i));
+  assert.deepEqual(model.snapshots.map(x=>x.endYear),
+   Array.from({length:span},(_,i)=>origin+i));
+  const html=scientificMarkovPanel({horizon:span,origin});
+  const svg=renderVerifiedGeometry(model,span,null,false,true);
+  for(let year=cutoff;year<=2025;year++){
+   assert.match(svg,new RegExp('class="future-year"[^>]*>'+year+'<\\/text>'));
+   assert.match(html,new RegExp('>'+year+'<strong>|>'+year+'<\\/strong>|>'+year+'<\\/text>'));
+  }
+  assert.equal((html.match(/data-action="markov-year"/g)||[]).length,span);
+  assert.match(html,/MALLA SINTÉTICA/);
+  assert.match(html,/probabilidades y resultados totalmente ficticios/);
+  assert.doesNotMatch(html,/github\.com|ORIGEN_HISTORICO/);
+  assert.doesNotMatch(svg,/T\+\d|T0/);
+  assert.equal(model.observedStates.length,0);
+ }
+ assert.throws(()=>syntheticFourStateModel(7,2020),/INVALID_HORIZON/);
+ assert.throws(()=>syntheticFourStateModel(2,2027),/INVALID_ILLUSTRATIVE_ORIGIN/);
+});
+test("The public explorer binds origin selection, annual focus, and complete-year responsive layout",()=>{
+ const site=readFileSync(new URL("../src/site.mjs",import.meta.url),"utf8");
+ const css=readFileSync(new URL("../styles.css",import.meta.url),"utf8");
+ assert.match(site,/markovOrigin:2020/);
+ assert.match(site,/case "markov-origin"/);
+ assert.match(site,/2026-state.markovOrigin/);
+ assert.match(site,/chart\.scrollLeft/);
+ assert.match(css,/\.markov-origin-controls/);
+ assert.match(css,/\.science-markov-panel \.future-year/);
+ assert.match(css,/\.future-graph-scroll\{[^}]*overflow-x:auto/);
 });
