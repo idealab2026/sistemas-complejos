@@ -183,3 +183,20 @@ fieldset{border:0;padding:0;margin:0}.field{display:grid;gap:6px;margin:12px 0;f
 .science-markov-panel .future-year-static,.science-markov-panel .future-year-select{flex-basis:105px;min-width:105px}
 .science-markov-panel .future-graph-scroll{margin-top:8px}
 }
+
+/* One probability vector, six selectable questions, clear state semantics. */
+.science-prediction-question{display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(230px,1fr);gap:12px;align-items:end;border:1px solid #365466;border-radius:10px;background:#101f2b;padding:13px;margin:13px 0}
+.science-prediction-question label{display:grid;gap:6px;color:#cde4f1;font-size:.77rem;font-weight:720}
+.science-prediction-question label select{margin:0;max-width:100%;font-size:.8rem}
+.science-prediction-question p{grid-column:1/-1;margin:0;color:#9db8c9;font-size:.72rem}
+.science-question-result{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.science-question-result>div{padding:8px 10px;border:1px solid #426477;background:#142a39;border-radius:8px}
+.science-question-result small{display:block;color:#99bcce;font-size:.66rem}
+.science-question-result strong{display:block;font-variant-numeric:tabular-nums;font-size:1.28rem;color:#eff8fd}
+.science-tree-states{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.science-tree-state{min-width:0;display:grid;gap:3px;align-content:start;padding:9px;border:1px solid #334d5d;border-radius:8px;background:#101e29}
+.science-tree-state.matches-question{border-color:#7bb6d1;background:#19364a}
+.science-tree-state strong{font-size:.73rem;overflow-wrap:anywhere}
+.science-tree-state small{font-size:.65rem;color:#a1bcc9}
+.science-tree-state em{font-style:normal;font-size:.61rem;font-weight:750;color:#b2e5f7}
+@media(max-width:800px){.science-prediction-question{grid-template-columns:1fr}.science-prediction-question p{grid-column:auto}.science-tree-states{grid-template-columns:repeat(2,minmax(0,1fr))}}
