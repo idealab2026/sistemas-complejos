@@ -36,6 +36,37 @@ export function enableScientificNeural(root,programs,selectedId){
  return mountScientificNetwork(stage,{activeTrack:TRACK[selected]});
 }
 
+
+// Six mutually consistent questions from ONE synthetic four-state probability vector.
+export const PUBLIC_TREE_QUESTIONS=Object.freeze([
+ {id:"atleast25",name:"25 o más muertes en el año",states:[1,3]},
+ {id:"below25",name:"Menos de 25 muertes en el año",states:[0,2]},
+ {id:"entry",name:"Entrar en el episodio agregado",states:[1]},
+ {id:"exit",name:"Salir del episodio agregado",states:[2]},
+ {id:"persistence",name:"Persistir por encima del umbral",states:[3]},
+ {id:"stable_low",name:"Permanecer bajo el umbral",states:[0]}
+].map(q=>Object.freeze({...q,states:Object.freeze(q.states)})));
+const STATE_MEANINGS=[
+ "Dos años por debajo del umbral",
+ "Cruza de bajo a 25 o más",
+ "Desciende de 25 o más a bajo",
+ "Dos años con 25 o más"
+];
+export function syntheticTreeQuestion(model,horizon,question="atleast25"){
+ const q=PUBLIC_TREE_QUESTIONS.find(x=>x.id===question);
+ if(!q||!Number.isInteger(horizon)||horizon<1||horizon>model?.maxHorizon)
+  throw new Error("INVALID_ILLUSTRATIVE_QUESTION");
+ const masses=model.snapshots[horizon-1]?.distribution;
+ if(!Array.isArray(masses)||masses.length!==4||
+    masses.some(x=>typeof x!=="number"||!Number.isFinite(x)||x<0||x>1)||
+    Math.abs(masses.reduce((a,b)=>a+b,0)-1)>1e-9)
+  throw new Error("INVALID_SYNTHETIC_DISTRIBUTION");
+ const yes=q.states.reduce((total,i)=>total+masses[i],0);
+ return {id:q.id,name:q.name,year:model.snapshots[horizon-1].endYear,
+  yes,no:1-yes,matched:[...q.states]};
+}
+const answerPct=n=>new Intl.NumberFormat("es-ES",{style:"percent",maximumFractionDigits:2}).format(n);
+
 export const PUBLIC_CALENDAR_ORIGINS=Object.freeze([2016,2020]);
 export function syntheticFourStateModel(periods=6,origin=2020){
  if(!PUBLIC_CALENDAR_ORIGINS.includes(origin))throw new Error("INVALID_ILLUSTRATIVE_ORIGIN");
@@ -63,12 +94,30 @@ export function syntheticFourStateModel(periods=6,origin=2020){
   }))};
 }
 
-export function scientificMarkovPanel({horizon=6,selection=null,origin=2020}={}){
+export function scientificMarkovPanel({horizon=6,selection=null,origin=2020,question="atleast25"}={}){
  if(!PUBLIC_CALENDAR_ORIGINS.includes(origin))throw new Error("INVALID_ILLUSTRATIVE_ORIGIN");
  const maxHorizon=2026-origin;
  if(!Number.isInteger(horizon)||horizon<1||horizon>maxHorizon)throw new Error("INVALID_SELECTION");
  const data=syntheticFourStateModel(maxHorizon,origin);
  const graph=renderVerifiedGeometry(data,horizon,selection,false,true);
+ const answer=syntheticTreeQuestion(data,horizon,question);
+ const questionOptions=PUBLIC_TREE_QUESTIONS.map(q=>
+  '<option value="'+q.id+'"'+(q.id===question?' selected':'')+'>'+escape(q.name)+'</option>').join("");
+ const questionPanel='<div class="science-prediction-question">'+
+  '<label>¿Qué quieres calcular a partir del mismo árbol?'+
+  '<select data-public-question aria-label="Pregunta hipotética a calcular">'+questionOptions+
+  '<optgroup label="Sin modelo ni probabilidades"><option disabled>Guerra nueva</option>'+
+  '<option disabled>Decisiones políticas</option><option disabled>Movimientos de mercados</option></optgroup>'+
+  '</select></label>'+
+  '<div class="science-question-result"><div><small>SÍ · '+answer.year+
+  '</small><strong>'+answerPct(answer.yes)+'</strong></div>'+
+  '<div><small>NO · '+answer.year+'</small><strong>'+answerPct(answer.no)+'</strong></div></div>'+
+  '<p>Porcentajes exclusivamente sintéticos. Las seis preguntas utilizan la misma distribución de cuatro estados: cambiar la pregunta no entrena otro modelo.</p></div>';
+ const statesGuide='<div class="science-tree-states" aria-label="Significado de los nodos 00 01 10 11">'+
+  STATE_LABELS.map((title,i)=>'<div class="science-tree-state'+(answer.matched.includes(i)?' matches-question':'')+
+  '"><strong>'+escape(title)+'</strong><small>'+escape(STATE_MEANINGS[i])+'</small>'+
+  (answer.matched.includes(i)?'<em>Responde SÍ</em>':'')+'</div>').join("")+'</div>';
+
  const inspection=selection?.kind==="node"?
   "Nodo "+data.levels[selection.level]?.year+": "+(STATE_LABELS[selection.state]||"No válido")+" · "+
    new Intl.NumberFormat("es-ES",{style:"percent",maximumFractionDigits:2}).format(data.levels[selection.level]?.distribution[selection.state]??0):
@@ -93,8 +142,10 @@ export function scientificMarkovPanel({horizon=6,selection=null,origin=2020}={})
  '<p class="markov-timeline-explainer">Años visibles en el árbol: <b>'+data.cutoff+'</b> (último dato ficticio) · <b>'+(origin-1)+
  '</b> (puente sin observación) · <b>'+origin+'–2025</b> (años de proyección). '+
  'Ninguna probabilidad procede de las cohortes históricas privadas.</p>'+
+ questionPanel+
  '<nav class="future-year-strip" aria-label="Todos los años naturales del árbol">'+strip+'</nav>'+
  '<div class="future-graph-scroll" data-science-markov tabindex="0" role="region" aria-label="Árbol de años '+data.cutoff+' a 2025; desliza horizontalmente para verlos todos">'+graph+'</div>'+
+ statesGuide+
  '<div class="future-selection-note" role="status">'+escape(inspection)+'</div>'+
  '<div class="science-state-legend">'+STATE_LABELS.map((n,i)=>'<span data-state="'+i+'">'+escape(n)+'</span>').join("")+'</div>'+
  '<p class="viz-foot">Calendario real de años, probabilidades y resultados totalmente ficticios. No hay evaluación ni emisión científica; los árboles históricos autentificados requieren el entorno privado.</p></section>';
