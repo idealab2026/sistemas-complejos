@@ -15,7 +15,7 @@ const groupViews={
 };
 const viewIds=new Set(Object.values(groupViews).flat().map(x=>x[0]));
 const viewToGroup=Object.fromEntries(Object.entries(groupViews).flatMap(([k,items])=>items.map(([id])=>[id,k])));
-const state={data:null,research:null,registryFilter:"todos",registryOutput:null,view:viewIds.has(new URLSearchParams(location.search).get("view"))?new URLSearchParams(location.search).get("view"):"brief",scenario:null,program:null,study:null,filter:"todos",ideas:[],flowState:"00",markovOrigin:2020,markovHorizon:6,markovSelection:null,videoText:"",busy:false};
+const state={data:null,research:null,registryFilter:"todos",registryOutput:null,view:viewIds.has(new URLSearchParams(location.search).get("view"))?new URLSearchParams(location.search).get("view"):"brief",scenario:null,program:null,study:null,filter:"todos",ideas:[],flowState:"00",markovOrigin:2020,markovHorizon:6,markovQuestion:"atleast25",markovSelection:null,videoText:"",busy:false};
 const section=(eyebrow,title,description)=>'<header class="section-head"><div class="eyebrow">'+safe(eyebrow)+'</div><h2>'+safe(title)+'</h2><p>'+safe(description)+'</p></header>';
 const box=(contents,extra="")=>'<article class="panel '+extra+'">'+contents+'</article>';
 const tag=(t,cls="")=>'<span class="tag '+cls+'">'+safe(t)+'</span>';
@@ -49,7 +49,7 @@ function renderFutures(){
  const d=state.data;
  const chosen=d.branches.find(x=>x.id===state.scenario)||d.branches[0];
  return section("PREDICCIONES · EXPLORADOR","Árbol de posibilidades","Exploración de mecanismos hipotéticos. Los porcentajes siguientes son pesos fijados para la demostración; no están estimados a partir de resultados reales.")+
- scientificMarkovPanel({horizon:state.markovHorizon,selection:state.markovSelection,origin:state.markovOrigin})+
+ scientificMarkovPanel({horizon:state.markovHorizon,selection:state.markovSelection,origin:state.markovOrigin,question:state.markovQuestion})+
   '<div class="two-col">'+box('<div class="tiny">TRAYECTORIA ELEGIDA</div><h3>'+safe(chosen.name)+'</h3><div class="tree">'+d.branches.map(b=>'<div class="scenario '+(chosen.id===b.id?"active":"")+'"><div class="tiny">ESTADO POSIBLE</div><strong>'+safe(b.name)+'</strong>'+percentageBar(b.weight)+'</div>').join("")+'</div><p>La partición del universo es hipotética; cualquier cambio de supuestos exige documentar una nueva versión.</p>')+
  box('<h3>Lectura explicable</h3><p>'+safe(chosen.mechanism)+'</p><h4>Observación a vigilar</h4><p>'+safe(chosen.watch)+'</p><div class="notice">No hay resultados registrados ni probabilidades de países o eventos reales.</div>')+'</div>'+
   section("PROBABILIDADES","Modelo y trayectoria","La demostración permite alternar entre estudios y visualizar sus probabilidades sobre etiquetas inventadas.")+
@@ -232,6 +232,18 @@ document.querySelectorAll("[data-section]").forEach(button=>button.addEventListe
  const group=button.dataset.section;navigate(groupViews[group][0][0]);
 }));
 $("refresh").addEventListener("click",load);
+$("app").addEventListener("change",event=>{
+  const select=event.target.closest?.("[data-public-question]");
+  if(!select)return;
+  const allowed=new Set(["atleast25","below25","entry","exit","persistence","stable_low"]);
+  if(!allowed.has(select.value))return;
+  state.markovQuestion=select.value;state.markovSelection=null;
+  const graph=$("app").querySelector("[data-science-markov]");
+  const scroll=graph?.scrollLeft||0;
+  render();
+  const next=$("app").querySelector("[data-science-markov]");
+  if(next)next.scrollLeft=scroll;
+});
 $("app").addEventListener("click",async event=>{
  const graphNode=event.target.closest("[data-fnode],[data-fedge]");
  if(graphNode){
