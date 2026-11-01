@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {buildScientificNetwork,createResearchFrameLoop} from "../src/neural.mjs";
 import {renderVerifiedGeometry} from "../src/markov-svg.mjs";
-import {scientificNeuralPanel,syntheticFourStateModel,scientificMarkovPanel,PUBLIC_CALENDAR_ORIGINS,TRANSITIONS} from "../src/lab-renderers.mjs";
+import {scientificNeuralPanel,syntheticFourStateModel,scientificMarkovPanel,PUBLIC_CALENDAR_ORIGINS,PUBLIC_TREE_QUESTIONS,syntheticTreeQuestion,TRANSITIONS} from "../src/lab-renderers.mjs";
 const demo=JSON.parse(readFileSync(new URL("../data/demo.json",import.meta.url),"utf8"));
 test("Research network geometry has two lobes and all four conceptual tracks",()=>{
  const g=buildScientificNetwork(16);
@@ -114,4 +114,46 @@ test("The public explorer binds origin selection, annual focus, and complete-yea
  assert.match(css,/\.markov-origin-controls/);
  assert.match(css,/\.science-markov-panel \.future-year/);
  assert.match(css,/\.future-graph-scroll\{[^}]*overflow-x:auto/);
+});
+
+
+test("Six questions are compatible with ONE unchanged synthetic distribution, without retraining",()=>{
+ const model=syntheticFourStateModel(6,2020),h=6;
+ assert.deepEqual(PUBLIC_TREE_QUESTIONS.map(x=>x.id),
+  ["atleast25","below25","entry","exit","persistence","stable_low"]);
+ const values=Object.fromEntries(PUBLIC_TREE_QUESTIONS.map(q=>[q.id,syntheticTreeQuestion(model,h,q.id)]));
+ const masses=model.snapshots[h-1].distribution;
+ const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-12);
+ close(values.atleast25.yes,masses[1]+masses[3]);
+ close(values.below25.yes,masses[0]+masses[2]);
+ close(values.entry.yes,masses[1]);
+ close(values.exit.yes,masses[2]);
+ close(values.persistence.yes,masses[3]);
+ close(values.stable_low.yes,masses[0]);
+ close(values.atleast25.yes+values.below25.yes,1);
+ for(const value of Object.values(values)){
+  close(value.yes+value.no,1);
+  assert.equal(value.year,2025);
+ }
+ const html=scientificMarkovPanel({horizon:h,origin:2020,question:"persistence"});
+ assert.equal((html.match(/<option value="(?:atleast25|below25|entry|exit|persistence|stable_low)"/g)||[]).length,6);
+ assert.match(html,/data-public-question/);
+ assert.match(html,/option value="persistence" selected/);
+ assert.match(html,/data-science-markov/);
+ assert.match(html,/class="science-tree-state matches-question"/);
+ assert.match(html,/Porcentajes exclusivamente sintéticos/);
+ assert.doesNotMatch(html,/predicción certificada|datos científicos reales/i);
+ assert.throws(()=>syntheticTreeQuestion(model,3,"war"),/INVALID_ILLUSTRATIVE_QUESTION/);
+ assert.throws(()=>syntheticTreeQuestion(model,7,"atleast25"),/INVALID_ILLUSTRATIVE_QUESTION/);
+});
+test("Public web interaction changes question without altering the selected origin, year or probabilities",()=>{
+ const site=readFileSync(new URL("../src/site.mjs",import.meta.url),"utf8");
+ assert.match(site,/markovQuestion:"atleast25"/);
+ assert.match(site,/case "markov-origin"/);
+ assert.match(site,/data-public-question/);
+ assert.match(site,/state\.markovQuestion=select\.value/);
+ assert.match(site,/scrollLeft=scroll/);
+ const css=readFileSync(new URL("../styles.css",import.meta.url),"utf8");
+ assert.match(css,/\.science-tree-state\.matches-question/);
+ assert.match(css,/\.science-prediction-question/);
 });
