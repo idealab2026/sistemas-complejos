@@ -15,7 +15,7 @@ const groupViews={
 };
 const viewIds=new Set(Object.values(groupViews).flat().map(x=>x[0]));
 const viewToGroup=Object.fromEntries(Object.entries(groupViews).flatMap(([k,items])=>items.map(([id])=>[id,k])));
-const state={data:null,research:null,registryFilter:"todos",registryOutput:null,view:viewIds.has(new URLSearchParams(location.search).get("view"))?new URLSearchParams(location.search).get("view"):"brief",scenario:null,program:null,study:null,filter:"todos",ideas:[],flowState:"00",markovHorizon:4,markovSelection:null,videoText:"",busy:false};
+const state={data:null,research:null,registryFilter:"todos",registryOutput:null,view:viewIds.has(new URLSearchParams(location.search).get("view"))?new URLSearchParams(location.search).get("view"):"brief",scenario:null,program:null,study:null,filter:"todos",ideas:[],flowState:"00",markovOrigin:2020,markovHorizon:6,markovSelection:null,videoText:"",busy:false};
 const section=(eyebrow,title,description)=>'<header class="section-head"><div class="eyebrow">'+safe(eyebrow)+'</div><h2>'+safe(title)+'</h2><p>'+safe(description)+'</p></header>';
 const box=(contents,extra="")=>'<article class="panel '+extra+'">'+contents+'</article>';
 const tag=(t,cls="")=>'<span class="tag '+cls+'">'+safe(t)+'</span>';
@@ -49,7 +49,7 @@ function renderFutures(){
  const d=state.data;
  const chosen=d.branches.find(x=>x.id===state.scenario)||d.branches[0];
  return section("PREDICCIONES · EXPLORADOR","Árbol de posibilidades","Exploración de mecanismos hipotéticos. Los porcentajes siguientes son pesos fijados para la demostración; no están estimados a partir de resultados reales.")+
- scientificMarkovPanel({horizon:state.markovHorizon,selection:state.markovSelection})+
+ scientificMarkovPanel({horizon:state.markovHorizon,selection:state.markovSelection,origin:state.markovOrigin})+
   '<div class="two-col">'+box('<div class="tiny">TRAYECTORIA ELEGIDA</div><h3>'+safe(chosen.name)+'</h3><div class="tree">'+d.branches.map(b=>'<div class="scenario '+(chosen.id===b.id?"active":"")+'"><div class="tiny">ESTADO POSIBLE</div><strong>'+safe(b.name)+'</strong>'+percentageBar(b.weight)+'</div>').join("")+'</div><p>La partición del universo es hipotética; cualquier cambio de supuestos exige documentar una nueva versión.</p>')+
  box('<h3>Lectura explicable</h3><p>'+safe(chosen.mechanism)+'</p><h4>Observación a vigilar</h4><p>'+safe(chosen.watch)+'</p><div class="notice">No hay resultados registrados ni probabilidades de países o eventos reales.</div>')+'</div>'+
   section("PROBABILIDADES","Modelo y trayectoria","La demostración permite alternar entre estudios y visualizar sus probabilidades sobre etiquetas inventadas.")+
@@ -239,10 +239,10 @@ $("app").addEventListener("click",async event=>{
   const pair=String(node||edge||"").split(":").map(Number);
   if(pair.length!==2||!pair.every(Number.isInteger))return;
   if(node){
-   if(pair[0]<0||pair[0]>7||pair[1]<0||pair[1]>3)return;
+   if(pair[0]<0||pair[0]>2026-state.markovOrigin+1||pair[1]<0||pair[1]>3)return;
    state.markovSelection={kind:"node",level:pair[0],state:pair[1]};
   }else{
-   const model=syntheticFourStateModel();
+   const model=syntheticFourStateModel(2026-state.markovOrigin,state.markovOrigin);
    if(pair[0]<1||pair[0]>=model.levels.length||pair[1]<0||pair[1]>=model.levels[pair[0]].flows.length)return;
    state.markovSelection={kind:"edge",level:pair[0],index:pair[1]};
   }
@@ -255,7 +255,28 @@ $("app").addEventListener("click",async event=>{
  case "scenario":state.scenario=value;render();break;
  case "program":state.program=value;navigate("overview");break;
  case "state-flow":state.flowState=value;render();break;
- case "markov-year":state.markovHorizon=Math.max(1,Math.min(6,Number(value)||1));state.markovSelection=null;render();break;
+ case "markov-origin": {
+    const y=Number(value);
+    if(y!==2016&&y!==2020)break;
+    state.markovOrigin=y;
+    state.markovHorizon=2026-y;
+    state.markovSelection=null;
+    render();
+    break;
+  }
+  case "markov-year": {
+    const y=Number(value);
+    if(!Number.isInteger(y)||y<1||y>2026-state.markovOrigin)break;
+    state.markovHorizon=y;
+    state.markovSelection=null;
+    render();
+    const strip=$("app").querySelector(".science-markov-panel .future-year-strip");
+    const selected=strip?.querySelector(".future-year-select.active");
+    if(selected&&strip)strip.scrollLeft=selected.offsetLeft-strip.offsetLeft-(strip.clientWidth-selected.clientWidth)/2;
+    const chart=$("app").querySelector("[data-science-markov]");
+    if(chart)chart.scrollLeft=Math.max(0,76+(y+1)*126-chart.clientWidth/2);
+    break;
+  }
  case "filter":state.filter=value;render();break;
   case "registry-filter":state.registryFilter=value;render();break;
   case "download-research-csv": {
