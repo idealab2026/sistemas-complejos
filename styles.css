@@ -164,3 +164,22 @@ fieldset{border:0;padding:0;margin:0}.field{display:grid;gap:6px;margin:12px 0;f
 .science-neural-panel .neural-orb{width:145px}
 @media(max-width:720px){.science-state-legend{grid-template-columns:repeat(2,minmax(0,1fr))}.science-neural-panel .neural-orb{width:105px}.science-markov-panel .future-year-select{flex:1 0 82px}}
 @media(prefers-reduced-motion:reduce){.future-pulse,.future-core-glow{animation:none}.science-neural-panel .neural-stage .orb-sphere:before,.science-neural-panel .neural-stage .orb-sphere:after{animation:none}}
+
+
+/* Calendar years are explicit; horizontal overflow belongs to the tree viewport,
+   not to the page. The reference year and bridge remain visually distinct. */
+.markov-origin-controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.markov-origin-controls .ghost{padding:8px 12px;border-radius:8px;font-size:.75rem}
+.markov-timeline-explainer{color:#b8cbd8;max-width:950px;margin:10px 0 12px;line-height:1.55;font-size:.77rem}
+.markov-timeline-explainer b{font-variant-numeric:tabular-nums;color:#e3f3ff}
+.science-markov-panel .future-year-strip{scrollbar-gutter:stable;overscroll-behavior-x:contain}
+.science-markov-panel .future-year-static{border-style:dashed}
+.science-markov-panel .future-year-select.active{background:#21435a;border-color:#9ddfff;box-shadow:inset 0 0 0 1px #c9e9fa}
+.science-markov-panel .future-graph-scroll{scrollbar-gutter:stable}
+.science-markov-panel .future-year{font:800 14px ui-monospace,monospace;fill:#eff8ff}
+.science-markov-panel .future-year-note{font:10px ui-monospace,monospace;fill:#a5c1d2}
+.science-markov-panel [data-science-markov]:focus-visible{outline:2px solid #9ddfff;outline-offset:3px}
+@media(max-width:700px){.markov-origin-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.science-markov-panel .future-year-static,.science-markov-panel .future-year-select{flex-basis:105px;min-width:105px}
+.science-markov-panel .future-graph-scroll{margin-top:8px}
+}
