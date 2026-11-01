@@ -36,9 +36,16 @@ export function enableScientificNeural(root,programs,selectedId){
  return mountScientificNetwork(stage,{activeTrack:TRACK[selected]});
 }
 
-export function syntheticFourStateModel(periods=6){
- if(!Number.isInteger(periods)||periods<1||periods>10)throw new Error("INVALID_HORIZON");
- let distribution=[1,0,0,0];const levels=[{year:"T0",distribution:[...distribution],flows:[]}];
+export const PUBLIC_CALENDAR_ORIGINS=Object.freeze([2016,2020]);
+export function syntheticFourStateModel(periods=6,origin=2020){
+ if(!PUBLIC_CALENDAR_ORIGINS.includes(origin))throw new Error("INVALID_ILLUSTRATIVE_ORIGIN");
+ const maxHorizon=2026-origin;
+ if(!Number.isInteger(periods)||periods<1||periods>maxHorizon)throw new Error("INVALID_HORIZON");
+ // These are merely calendar labels for a synthetic illustration. The
+ // transitions, country and outputs do NOT reproduce the private catalog.
+ let distribution=[1,0,0,0];
+ const cutoff=origin-2;
+ const levels=[{year:cutoff,distribution:[...distribution],flows:[]}];
  for(let step=1;step<=periods+1;step++){
   const flows=[],next=[0,0,0,0];
   for(let from=0;from<4;from++)for(let to=0;to<4;to++){
@@ -46,33 +53,49 @@ export function syntheticFourStateModel(periods=6){
    if(mass>0)flows.push({from,to,conditional,mass});
    next[to]+=mass;
   }
-  distribution=next;levels.push({year:"T+"+step,distribution:[...distribution],flows});
+  distribution=next;
+  levels.push({year:cutoff+step,distribution:[...distribution],flows});
  }
- return {origin:1,cutoff:-1,maxHorizon:periods,country:{name:"Ejemplo sintético"},initial:0,
+ return {origin,cutoff,maxHorizon:periods,country:{name:"Ejemplo sintético"},initial:0,
   levels,states:STATE_LABELS,observedStates:[],snapshots:Array.from({length:periods},(_,i)=>({
-   endYear:"T+"+(i+2),distribution:levels[i+2].distribution,
+   endYear:origin+i,distribution:levels[i+2].distribution,
    paths:[],interval95:null
   }))};
 }
 
-export function scientificMarkovPanel({horizon=4,selection=null}={}){
- const data=syntheticFourStateModel(6);
- if(!Number.isInteger(horizon)||horizon<1||horizon>6)throw new Error("INVALID_SELECTION");
+export function scientificMarkovPanel({horizon=6,selection=null,origin=2020}={}){
+ if(!PUBLIC_CALENDAR_ORIGINS.includes(origin))throw new Error("INVALID_ILLUSTRATIVE_ORIGIN");
+ const maxHorizon=2026-origin;
+ if(!Number.isInteger(horizon)||horizon<1||horizon>maxHorizon)throw new Error("INVALID_SELECTION");
+ const data=syntheticFourStateModel(maxHorizon,origin);
  const graph=renderVerifiedGeometry(data,horizon,selection,false,true);
  const inspection=selection?.kind==="node"?
-  "Nodo T+"+selection.level+": "+(STATE_LABELS[selection.state]||"No válido")+" · "+
+  "Nodo "+data.levels[selection.level]?.year+": "+(STATE_LABELS[selection.state]||"No válido")+" · "+
    new Intl.NumberFormat("es-ES",{style:"percent",maximumFractionDigits:2}).format(data.levels[selection.level]?.distribution[selection.state]??0):
-  selection?.kind==="edge"?"Transición seleccionada en el período T+"+selection.level:
-  "Inspecciona un nodo o una conexión. Se muestran todos los períodos del mismo origen.";
+  selection?.kind==="edge"?"Transición seleccionada en "+data.levels[selection.level]?.year:
+  "Selecciona un año, un nodo o una transición. Se conserva el árbol completo del mismo origen.";
+ const originButtons=PUBLIC_CALENDAR_ORIGINS.map(y=>
+  '<button type="button" class="ghost '+(y===origin?'active':'')+
+  '" data-action="markov-origin" data-value="'+y+'" aria-pressed="'+String(y===origin)+
+  '">Origen '+y+' · ejemplo</button>').join("");
+ const strip=data.levels.map((level,i)=>{
+  const active=i===horizon+1;
+  const state=i===0?"último dato (simulado)":i===1?"puente (simulado)":active?"inspeccionado":"proyección (simulada)";
+  const opening=i<2?'<span class="future-year-static" aria-label="'+level.year+' · '+state+'">':
+    '<button type="button" class="future-year-select'+(active?' active':'')+
+    '" data-action="markov-year" data-value="'+(i-1)+'" aria-pressed="'+String(active)+'" aria-label="Inspeccionar '+level.year+'">';
+  return opening+'<strong>'+level.year+'</strong><small>'+state+'</small>'+(i<2?'</span>':'</button>');
+ }).join("");
  return '<section class="panel science-markov-panel" aria-label="Árbol temporal ilustrativo de cuatro estados">'+
- '<div class="viz-heading"><div><div class="eyebrow">ESTRUCTURA GRÁFICA · DEMOSTRACIÓN</div>'+
- '<h3>Árbol temporal de cuatro estados</h3></div><span class="viz-label">MALLA SINTÉTICA · NINGÚN PAÍS REAL</span></div>'+
- '<p>Renderizador SVG: cuatro filas de estados, aristas con probabilidad condicional y flujo, y selección de cada nodo. Las probabilidades se generan aquí exclusivamente para ilustrar la interfaz.</p>'+
- '<div class="future-year-strip">'+Array.from({length:8},(_,i)=>
-  '<button type="button" class="future-year-select '+(i===horizon+1?"active":"")+'" data-action="markov-year" data-value="'+(i<=1?1:i-1)+'" aria-pressed="'+String(i===horizon+1)+'">'+
-  '<strong>'+ (i?"T+"+i:"T0")+'</strong><small>'+(i===0?"origen":i===1?"puente":i===horizon+1?"inspeccionado":"proyección")+'</small></button>').join("")+'</div>'+
- '<div class="future-graph-scroll" data-science-markov>'+graph+'</div>'+
+ '<div class="viz-heading"><div><div class="eyebrow">ESTRUCTURA TEMPORAL · CALENDARIO ILUSTRATIVO</div>'+
+ '<h3>Árbol de predicciones · '+origin+'–2025</h3></div><span class="viz-label">MALLA SINTÉTICA · NINGÚN PAÍS REAL</span></div>'+
+ '<div class="markov-origin-controls" role="group" aria-label="Año inicial del árbol ilustrativo">'+originButtons+'</div>'+
+ '<p class="markov-timeline-explainer">Años visibles en el árbol: <b>'+data.cutoff+'</b> (último dato ficticio) · <b>'+(origin-1)+
+ '</b> (puente sin observación) · <b>'+origin+'–2025</b> (años de proyección). '+
+ 'Ninguna probabilidad procede de las cohortes históricas privadas.</p>'+
+ '<nav class="future-year-strip" aria-label="Todos los años naturales del árbol">'+strip+'</nav>'+
+ '<div class="future-graph-scroll" data-science-markov tabindex="0" role="region" aria-label="Árbol de años '+data.cutoff+' a 2025; desliza horizontalmente para verlos todos">'+graph+'</div>'+
  '<div class="future-selection-note" role="status">'+escape(inspection)+'</div>'+
  '<div class="science-state-legend">'+STATE_LABELS.map((n,i)=>'<span data-state="'+i+'">'+escape(n)+'</span>').join("")+'</div>'+
- '<p class="viz-foot">Demostración con estados y probabilidades sintéticos. No representa información observada ni un pronóstico.</p></section>';
+ '<p class="viz-foot">Calendario real de años, probabilidades y resultados totalmente ficticios. No hay evaluación ni emisión científica; los árboles históricos autentificados requieren el entorno privado.</p></section>';
 }
